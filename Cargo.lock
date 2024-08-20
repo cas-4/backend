@@ -363,10 +363,10 @@ dependencies = [
  "futures-util",
  "lazy_static",
  "postgis",
- "postgres",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-postgres",
  "tower-http",
  "tracing",
  "tracing-subscriber",
@@ -1162,20 +1162,6 @@ dependencies = [
  "byteorder",
  "bytes",
  "postgres-types",
-]
-
-[[package]]
-name = "postgres"
-version = "0.19.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c9ec84ab55b0f9e418675de50052d494ba893fd28c65769a6e68fcdacbee2b8"
-dependencies = [
- "bytes",
- "fallible-iterator",
- "futures-util",
- "log",
- "tokio",
- "tokio-postgres",
 ]
 
 [[package]]

@@ -6,6 +6,7 @@ use axum::{
 use serde_json::json;
 
 /// All errors raised by the web app
+#[derive(Debug)]
 pub enum AppError {
     /// Database error
     Database,

@@ -1,14 +1,18 @@
 mod config;
+mod db;
 mod errors;
 mod graphql;
 mod logger;
 mod routes;
-use std::{net::SocketAddr, time::Duration};
+mod state;
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use crate::config::CONFIG;
+use async_graphql::{EmptyMutation, EmptySubscription, Schema};
 use axum::{
     http::{header, Request},
-    Router,
+    routing::post,
+    Extension, Router,
 };
 use tokio::net::TcpListener;
 use tower_http::{
@@ -21,10 +25,19 @@ use tracing::Span;
 /// Create the app: setup everything and returns a `Router`
 async fn create_app() -> Router {
     logger::setup();
-    // let _ = db::setup().await;
+    let dbclient = db::setup().await.unwrap();
+    let state = state::AppState {
+        client: Arc::new(dbclient),
+    };
 
+    let schema = Schema::build(graphql::Query, EmptyMutation, EmptySubscription)
+        .data(state.clone())
+        .finish();
     Router::new()
-        .nest("/graphql", graphql::create_route())
+        .route(
+            "/graphql",
+            post(move |req| graphql::graphql_handler(schema.clone().into(), req)),
+        )
         .fallback(crate::routes::page_404)
         // Mark the `Authorization` request header as sensitive so it doesn't
         // show in logs.
@@ -43,6 +56,7 @@ async fn create_app() -> Router {
                     },
                 ),
         )
+        .layer(Extension(state))
 }
 
 #[tokio::main(flavor = "current_thread")]

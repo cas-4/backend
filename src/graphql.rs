@@ -1,14 +1,11 @@
-use async_graphql::{
-    http::GraphiQLSource, Context, EmptyMutation, EmptySubscription, Object, Schema,
-};
-use async_graphql_axum::GraphQL;
-use axum::{
-    response::{self, IntoResponse},
-    routing::get,
-    Router,
-};
+use std::sync::Arc;
 
-struct Query;
+use async_graphql::{Context, EmptyMutation, EmptySubscription, Object, Schema};
+use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+
+// use crate::state::AppState;
+
+pub struct Query;
 
 #[Object]
 impl Query {
@@ -23,6 +20,19 @@ impl Query {
         #[graphql(desc = "First value")] a: i32,
         #[graphql(desc = "Second value")] b: Option<i32>,
     ) -> i32 {
+        // let state = ctx.data::<AppState>().unwrap();
+        // let client = &*state.client;
+        //
+        // // Perform a database query
+        // let rows = client
+        //     .query("SELECT owner FROM payment", &[])
+        //     .await
+        //     .unwrap();
+        // for row in rows {
+        //     let owner: String = row.get(0);
+        //     println!("{owner}");
+        // }
+
         match b {
             Some(x) => a + x,
             None => a,
@@ -30,16 +40,9 @@ impl Query {
     }
 }
 
-pub async fn graphiql() -> impl IntoResponse {
-    response::Html(
-        GraphiQLSource::build()
-            .endpoint("/")
-            .subscription_endpoint("/ws")
-            .finish(),
-    )
-}
-
-pub fn create_route() -> Router {
-    let schema = Schema::new(Query, EmptyMutation, EmptySubscription);
-    Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)))
+pub async fn graphql_handler(
+    schema: Arc<Schema<Query, EmptyMutation, EmptySubscription>>,
+    req: GraphQLRequest,
+) -> GraphQLResponse {
+    schema.execute(req.into_inner()).await.into()
 }
