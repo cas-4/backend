@@ -1,3 +1,4 @@
+use crate::{graphql::types::User, state::AppState};
 use async_graphql::{Context, Object};
 
 pub struct Query;
@@ -8,29 +9,26 @@ impl Query {
         "1.0"
     }
 
-    /// Returns the sum of a and b
-    async fn add<'ctx>(
-        &self,
-        _ctx: &Context<'ctx>,
-        #[graphql(desc = "First value")] a: i32,
-        #[graphql(desc = "Second value")] b: Option<i32>,
-    ) -> i32 {
-        // let state = ctx.data::<AppState>().unwrap();
-        // let client = &*state.client;
-        //
-        // // Perform a database query
-        // let rows = client
-        //     .query("SELECT owner FROM payment", &[])
-        //     .await
-        //     .unwrap();
-        // for row in rows {
-        //     let owner: String = row.get(0);
-        //     println!("{owner}");
-        // }
+    /// Returns all the users
+    async fn users<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Vec<User>>, String> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
 
-        match b {
-            Some(x) => a + x,
-            None => a,
-        }
+        let rows = client
+            .query("SELECT id, email, password, is_admin FROM users", &[])
+            .await
+            .unwrap();
+
+        let users: Vec<User> = rows
+            .iter()
+            .map(|row| User {
+                id: row.get("id"),
+                email: row.get("email"),
+                password: row.get("password"),
+                is_admin: row.get("is_admin"),
+            })
+            .collect();
+
+        Ok(Some(users))
     }
 }
