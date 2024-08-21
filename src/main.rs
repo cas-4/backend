@@ -26,6 +26,7 @@ use tracing::Span;
 async fn create_app() -> Router {
     logger::setup();
     let dbclient = db::setup().await.unwrap();
+
     let state = state::AppState {
         client: Arc::new(dbclient),
     };
@@ -37,10 +38,11 @@ async fn create_app() -> Router {
     )
     .data(state.clone())
     .finish();
+
     Router::new()
         .route(
             "/graphql",
-            post(move |req| graphql::routes::graphql_handler(schema.clone().into(), req)),
+            post(graphql::routes::graphql_handler).layer(Extension(schema.clone())),
         )
         .fallback(crate::routes::page_404)
         // Mark the `Authorization` request header as sensitive so it doesn't

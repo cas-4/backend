@@ -1,4 +1,4 @@
-use crate::graphql::types::user;
+use crate::{errors::AppError, graphql::types::user};
 use async_graphql::{Context, Object};
 
 pub struct Query;

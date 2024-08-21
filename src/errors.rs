@@ -42,10 +42,7 @@ impl IntoResponse for AppError {
                 "Token creation error".to_string(),
             ),
             AppError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid token".to_string()),
-            AppError::Unauthorized => (
-                StatusCode::UNAUTHORIZED,
-                "Can't perform this action".to_string(),
-            ),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
         };
 
         let body = Json(json!({

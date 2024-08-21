@@ -1,5 +1,10 @@
 use crate::errors::AppError;
 use async_graphql::{InputObject, SimpleObject};
+use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    typed_header::TypedHeader,
+};
 use chrono::{Duration, Local};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
@@ -7,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 struct Keys {
     encoding: EncodingKey,
-    _decoding: DecodingKey,
+    decoding: DecodingKey,
 }
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
@@ -19,18 +24,23 @@ impl Keys {
     fn new(secret: &[u8]) -> Self {
         Self {
             encoding: EncodingKey::from_secret(secret),
-            _decoding: DecodingKey::from_secret(secret),
+            decoding: DecodingKey::from_secret(secret),
         }
     }
 }
 
-/// Claims struct
-#[derive(Serialize, Deserialize)]
+/// Claims struct.
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Claims {
-    /// ID from the user model
-    pub user_id: i32,
-    /// Expiration timestamp
+    user_id: i32,
     exp: usize,
+}
+
+/// Authentication enum
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Authentication {
+    Logged(Claims),
+    NotLogged,
 }
 
 impl Claims {
@@ -74,6 +84,37 @@ impl AuthBody {
         Self {
             access_token,
             token_type: "Bearer".to_string(),
+        }
+    }
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for Authentication
+where
+    S: Send + Sync,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
+        // Extract the Authorization header
+        match TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &()).await {
+            Ok(TypedHeader(Authorization(bearer))) => {
+                // Decode the token
+                let token_data =
+                    decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
+                        .map_err(|err| match err.kind() {
+                            jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                                AppError::InvalidToken
+                            }
+                            _ => {
+                                eprintln!("{err:?}");
+                                return AppError::Unauthorized;
+                            }
+                        })?;
+
+                Ok(Self::Logged(token_data.claims))
+            }
+            Err(_) => Ok(Self::NotLogged),
         }
     }
 }

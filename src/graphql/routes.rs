@@ -2,11 +2,14 @@ use crate::graphql::mutation::Mutation;
 use crate::graphql::query::Query;
 use async_graphql::{EmptySubscription, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-use std::sync::Arc;
+use axum::extract::Extension;
+
+use super::types::jwt::Authentication;
 
 pub async fn graphql_handler(
-    schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
+    schema: Extension<Schema<Query, Mutation, EmptySubscription>>,
+    auth: Authentication,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
+    schema.execute(req.0.data(auth)).await.into()
 }
