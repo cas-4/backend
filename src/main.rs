@@ -8,7 +8,7 @@ mod state;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use crate::config::CONFIG;
-use async_graphql::{EmptyMutation, EmptySubscription, Schema};
+use async_graphql::{EmptySubscription, Schema};
 use axum::{
     http::{header, Request},
     routing::post,
@@ -30,9 +30,13 @@ async fn create_app() -> Router {
         client: Arc::new(dbclient),
     };
 
-    let schema = Schema::build(graphql::query::Query, EmptyMutation, EmptySubscription)
-        .data(state.clone())
-        .finish();
+    let schema = Schema::build(
+        graphql::query::Query,
+        graphql::mutation::Mutation,
+        EmptySubscription,
+    )
+    .data(state.clone())
+    .finish();
     Router::new()
         .route(
             "/graphql",
