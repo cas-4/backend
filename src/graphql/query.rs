@@ -1,9 +1,4 @@
-use std::sync::Arc;
-
-use async_graphql::{Context, EmptyMutation, EmptySubscription, Object, Schema};
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-
-// use crate::state::AppState;
+use async_graphql::{Context, Object};
 
 pub struct Query;
 
@@ -38,11 +33,4 @@ impl Query {
             None => a,
         }
     }
-}
-
-pub async fn graphql_handler(
-    schema: Arc<Schema<Query, EmptyMutation, EmptySubscription>>,
-    req: GraphQLRequest,
-) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
 }

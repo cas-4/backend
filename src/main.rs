@@ -30,13 +30,13 @@ async fn create_app() -> Router {
         client: Arc::new(dbclient),
     };
 
-    let schema = Schema::build(graphql::Query, EmptyMutation, EmptySubscription)
+    let schema = Schema::build(graphql::query::Query, EmptyMutation, EmptySubscription)
         .data(state.clone())
         .finish();
     Router::new()
         .route(
             "/graphql",
-            post(move |req| graphql::graphql_handler(schema.clone().into(), req)),
+            post(move |req| graphql::routes::graphql_handler(schema.clone().into(), req)),
         )
         .fallback(crate::routes::page_404)
         // Mark the `Authorization` request header as sensitive so it doesn't
