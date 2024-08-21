@@ -1,4 +1,4 @@
-use crate::{graphql::types::User, state::AppState};
+use crate::graphql::types::user;
 use async_graphql::{Context, Object};
 
 pub struct Query;
@@ -10,25 +10,7 @@ impl Query {
     }
 
     /// Returns all the users
-    async fn users<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Vec<User>>, String> {
-        let state = ctx.data::<AppState>().expect("Can't connect to db");
-        let client = &*state.client;
-
-        let rows = client
-            .query("SELECT id, email, password, is_admin FROM users", &[])
-            .await
-            .unwrap();
-
-        let users: Vec<User> = rows
-            .iter()
-            .map(|row| User {
-                id: row.get("id"),
-                email: row.get("email"),
-                password: row.get("password"),
-                is_admin: row.get("is_admin"),
-            })
-            .collect();
-
-        Ok(Some(users))
+    async fn users<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Vec<user::User>>, String> {
+        user::get_users(ctx).await
     }
 }
