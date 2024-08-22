@@ -1,4 +1,4 @@
-use crate::{errors::AppError, graphql::types::user};
+use crate::graphql::types::{position, user};
 use async_graphql::{Context, Object};
 
 pub struct Query;
@@ -17,5 +17,15 @@ impl Query {
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<user::User>>, String> {
         user::get_users(ctx, limit, offset).await
+    }
+
+    /// Returns all the positions
+    async fn positions<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        #[graphql(desc = "Limit results")] limit: Option<i64>,
+        #[graphql(desc = "Offset results")] offset: Option<i64>,
+    ) -> Result<Option<Vec<position::Position>>, String> {
+        position::get_positions(ctx, limit, offset).await
     }
 }

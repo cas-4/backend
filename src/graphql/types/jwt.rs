@@ -32,7 +32,7 @@ impl Keys {
 /// Claims struct.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Claims {
-    user_id: i32,
+    pub user_id: i32,
     exp: usize,
 }
 
