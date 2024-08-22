@@ -398,6 +398,7 @@ dependencies = [
  "async-graphql-axum",
  "axum",
  "axum-extra",
+ "bytes",
  "chrono",
  "config",
  "futures-util",
