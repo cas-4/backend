@@ -31,7 +31,11 @@ impl User {
     }
 }
 
-pub async fn get_users<'ctx>(ctx: &Context<'ctx>) -> Result<Option<Vec<User>>, String> {
+pub async fn get_users<'ctx>(
+    ctx: &Context<'ctx>,
+    limit: Option<i64>,
+    offset: Option<i64>,
+) -> Result<Option<Vec<User>>, String> {
     let state = ctx.data::<AppState>().expect("Can't connect to db");
     let client = &*state.client;
     let auth: &Authentication = ctx.data().unwrap();
@@ -39,7 +43,10 @@ pub async fn get_users<'ctx>(ctx: &Context<'ctx>) -> Result<Option<Vec<User>>, S
         Authentication::NotLogged => Err("Unauthorized".to_string()),
         Authentication::Logged(_claims) => {
             let rows = client
-                .query("SELECT id, email, password, is_admin FROM users", &[])
+                .query(
+                    "SELECT id, email, password, is_admin FROM users LIMIT $1 OFFSET $2",
+                    &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
+                )
                 .await
                 .unwrap();
 

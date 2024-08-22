@@ -10,7 +10,12 @@ impl Query {
     }
 
     /// Returns all the users
-    async fn users<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Vec<user::User>>, String> {
-        user::get_users(ctx).await
+    async fn users<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        #[graphql(desc = "Limit results")] limit: Option<i64>,
+        #[graphql(desc = "Offset results")] offset: Option<i64>,
+    ) -> Result<Option<Vec<user::User>>, String> {
+        user::get_users(ctx, limit, offset).await
     }
 }
