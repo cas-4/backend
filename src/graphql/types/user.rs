@@ -6,6 +6,7 @@ use tokio_postgres::Client;
 use super::jwt::Authentication;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// User struct
 pub struct User {
     pub id: i32,
     pub email: String,
@@ -32,9 +33,13 @@ impl User {
     }
 }
 
+/// Get users from the database
 pub async fn get_users<'ctx>(
     ctx: &Context<'ctx>,
+
+    // Optional limit results
     limit: Option<i64>,
+    // Optional offset results. It should be used with limit field.
     offset: Option<i64>,
 ) -> Result<Option<Vec<User>>, String> {
     let state = ctx.data::<AppState>().expect("Can't connect to db");
@@ -66,6 +71,7 @@ pub async fn get_users<'ctx>(
     }
 }
 
+/// Find an user with id = `id` using the PostgreSQL `client`
 pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
     let rows = client
         .query(

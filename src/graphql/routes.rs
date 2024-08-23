@@ -6,6 +6,8 @@ use axum::extract::Extension;
 
 use super::types::jwt::Authentication;
 
+/// Handler for GraphQL route.
+/// It executs the schema using the authorization as appdata
 pub async fn graphql_handler(
     schema: Extension<Schema<Query, Mutation, EmptySubscription>>,
     auth: Authentication,

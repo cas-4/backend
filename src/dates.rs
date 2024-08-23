@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+/// A DateTime used as GraphQL type
 pub struct GraphQLDate(pub DateTime<Utc>);
 
 impl From<DateTime<Utc>> for GraphQLDate {

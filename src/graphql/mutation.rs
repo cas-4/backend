@@ -2,10 +2,12 @@ use crate::graphql::types::jwt;
 use crate::state::AppState;
 use async_graphql::{Context, Error, FieldResult, Object};
 
+/// Mutation struct
 pub struct Mutation;
 
 #[Object]
 impl Mutation {
+    /// Make GraphQL login
     async fn login<'ctx>(
         &self,
         ctx: &Context<'ctx>,
@@ -25,6 +27,7 @@ impl Mutation {
 
         let id: Vec<i32> = rows.iter().map(|row| row.get(0)).collect();
         if id.len() == 1 {
+            // Create a new claim using the found ID
             let claims = jwt::Claims::new(id[0]);
             let token = claims.get_token().unwrap();
             Ok(jwt::AuthBody::new(token))

@@ -1,10 +1,12 @@
 use crate::graphql::types::{position, user};
 use async_graphql::{Context, Object};
 
+/// Query struct
 pub struct Query;
 
 #[Object]
 impl Query {
+    /// Returns the API version. It is like a "greet" function
     async fn api_version(&self) -> &'static str {
         "1.0"
     }

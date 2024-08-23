@@ -8,6 +8,7 @@ use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
 use super::user::find_user;
 
 #[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+/// Enumeration which refers to the kind of moving activity
 pub enum MovingActivity {
     // "Car" of the doc
     InVehicle,
@@ -67,6 +68,7 @@ impl ToSql for MovingActivity {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Position struct
 pub struct Position {
     pub id: i32,
     pub user_id: i32,
@@ -103,10 +105,18 @@ impl Position {
     }
 }
 
+/// Get positions from the database
 pub async fn get_positions<'ctx>(
     ctx: &Context<'ctx>,
+
+    // Optional filter by user id. If not defined returns only available positions:
+    // If claimed user is admin returns everything, otherwise only positions linked to that user.
     user_id: Option<i32>,
+
+    // Optional limit results
     limit: Option<i64>,
+
+    // Optional offset results. It should be used with limit field.
     offset: Option<i64>,
 ) -> Result<Option<Vec<Position>>, String> {
     let state = ctx.data::<AppState>().expect("Can't connect to db");
