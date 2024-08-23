@@ -179,3 +179,66 @@ pub async fn get_positions<'ctx>(
         }
     }
 }
+
+/// Get last positions from the database for each user.
+/// It is restricted to only admin users.
+pub async fn last_positions<'ctx>(
+    ctx: &Context<'ctx>,
+
+    // Optional filter by moving activity
+    moving_activity: Option<MovingActivity>,
+) -> Result<Option<Vec<Position>>, String> {
+    let state = ctx.data::<AppState>().expect("Can't connect to db");
+    let client = &*state.client;
+    let auth: &Authentication = ctx.data().unwrap();
+    match auth {
+        Authentication::NotLogged => Err("Unauthorized".to_string()),
+        Authentication::Logged(claims) => {
+            let claim_user = find_user(client, claims.user_id)
+                .await
+                .expect("Should not be here");
+
+            if !claim_user.is_admin {
+                return Err("Unauthorized".to_string());
+            }
+
+            let rows = client
+                        .query(
+                            "SELECT DISTINCT ON (user_id) 
+                                id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                            FROM positions ORDER BY user_id, created_at DESC",
+                            &[],
+                        )
+                        .await
+                        .unwrap();
+
+            let positions: Vec<Position> = match moving_activity {
+                Some(activity) => rows
+                    .iter()
+                    .map(|row| Position {
+                        id: row.get("id"),
+                        user_id: row.get("user_id"),
+                        created_at: GraphQLDate(Utc::now()),
+                        latitude: row.get("latitude"),
+                        longitude: row.get("longitude"),
+                        moving_activity: row.get("activity"),
+                    })
+                    .filter(|x| x.moving_activity == activity)
+                    .collect(),
+                None => rows
+                    .iter()
+                    .map(|row| Position {
+                        id: row.get("id"),
+                        user_id: row.get("user_id"),
+                        created_at: GraphQLDate(Utc::now()),
+                        latitude: row.get("latitude"),
+                        longitude: row.get("longitude"),
+                        moving_activity: row.get("activity"),
+                    })
+                    .collect(),
+            };
+
+            Ok(Some(positions))
+        }
+    }
+}

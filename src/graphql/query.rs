@@ -31,4 +31,16 @@ impl Query {
     ) -> Result<Option<Vec<position::Position>>, String> {
         position::get_positions(ctx, user_id, limit, offset).await
     }
+
+    /// Returns all the last positions for each user.
+    /// It is restricted to only admin users.
+    async fn last_positions<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        #[graphql(desc = "Filter by moving activity")] moving_activity: Option<
+            position::MovingActivity,
+        >,
+    ) -> Result<Option<Vec<position::Position>>, String> {
+        position::last_positions(ctx, moving_activity).await
+    }
 }
