@@ -23,9 +23,10 @@ impl Query {
     async fn positions<'ctx>(
         &self,
         ctx: &Context<'ctx>,
+        #[graphql(desc = "Filter by user id")] user_id: Option<i32>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<position::Position>>, String> {
-        position::get_positions(ctx, limit, offset).await
+        position::get_positions(ctx, user_id, limit, offset).await
     }
 }

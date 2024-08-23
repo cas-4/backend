@@ -1,11 +1,11 @@
-use crate::{dates::GraphQLDate, state::AppState};
+use crate::{dates::GraphQLDate, graphql::types::jwt::Authentication, state::AppState};
 use async_graphql::{Context, Enum, Object};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
 
-use super::jwt::Authentication;
+use super::user::find_user;
 
 #[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum MovingActivity {
@@ -105,6 +105,7 @@ impl Position {
 
 pub async fn get_positions<'ctx>(
     ctx: &Context<'ctx>,
+    user_id: Option<i32>,
     limit: Option<i64>,
     offset: Option<i64>,
 ) -> Result<Option<Vec<Position>>, String> {
@@ -114,14 +115,43 @@ pub async fn get_positions<'ctx>(
     match auth {
         Authentication::NotLogged => Err("Unauthorized".to_string()),
         Authentication::Logged(claims) => {
-            let rows = client.query("
-                SELECT id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                FROM positions
-                WHERE user_id = $1
-                ORDER BY id DESC
-                LIMIT $2
-                OFFSET $3",
-                &[&claims.user_id, &limit.unwrap_or(20), &offset.unwrap_or(0)]).await.unwrap();
+            let rows;
+            let claim_user = find_user(client, claims.user_id)
+                .await
+                .expect("Should not be here");
+
+            if claim_user.is_admin {
+                match user_id {
+                    Some(id) => {
+                        rows = client.query("
+                            SELECT id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                            FROM positions
+                            WHERE user_id = $1
+                            ORDER BY id DESC
+                            LIMIT $2
+                            OFFSET $3",
+                            &[&id, &limit.unwrap_or(20), &offset.unwrap_or(0)]).await.unwrap();
+                    }
+                    None => {
+                        rows = client.query("
+                            SELECT id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                            FROM positions
+                            ORDER BY id DESC
+                            LIMIT $1
+                            OFFSET $2",
+                            &[&limit.unwrap_or(20), &offset.unwrap_or(0)]).await.unwrap();
+                    }
+                }
+            } else {
+                rows = client.query("
+                    SELECT id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                    FROM positions
+                    WHERE user_id = $1
+                    ORDER BY id DESC
+                    LIMIT $2
+                    OFFSET $3",
+                    &[&claim_user.id, &limit.unwrap_or(20), &offset.unwrap_or(0)]).await.unwrap();
+            }
 
             let positions: Vec<Position> = rows
                 .iter()

@@ -1,6 +1,7 @@
-use crate::state::AppState;
+use crate::{errors::AppError, state::AppState};
 use async_graphql::{Context, Object};
 use serde::{Deserialize, Serialize};
+use tokio_postgres::Client;
 
 use super::jwt::Authentication;
 
@@ -62,5 +63,31 @@ pub async fn get_users<'ctx>(
 
             Ok(Some(users))
         }
+    }
+}
+
+pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
+    let rows = client
+        .query(
+            "SELECT id, email, password, is_admin FROM users WHERE id = $1",
+            &[&id],
+        )
+        .await
+        .unwrap();
+
+    let users: Vec<User> = rows
+        .iter()
+        .map(|row| User {
+            id: row.get("id"),
+            email: row.get("email"),
+            password: row.get("password"),
+            is_admin: row.get("is_admin"),
+        })
+        .collect();
+
+    if users.len() == 1 {
+        Ok(users[0].clone())
+    } else {
+        Err(AppError::NotFound("User".to_string()))
     }
 }
