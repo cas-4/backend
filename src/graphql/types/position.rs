@@ -1,5 +1,5 @@
 use crate::{dates::GraphQLDate, graphql::types::jwt::Authentication, state::AppState};
-use async_graphql::{Context, Enum, Object};
+use async_graphql::{Context, Enum, InputObject, Object};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -73,6 +73,14 @@ pub struct Position {
     pub id: i32,
     pub user_id: i32,
     pub created_at: GraphQLDate,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub moving_activity: MovingActivity,
+}
+
+#[derive(InputObject)]
+/// Position input struct
+pub struct PositionInput {
     pub latitude: f64,
     pub longitude: f64,
     pub moving_activity: MovingActivity,
