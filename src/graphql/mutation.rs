@@ -70,8 +70,8 @@ impl Mutation {
                         ",
                         &[
                             &claims.user_id,
-                            &input.latitude,
                             &input.longitude,
+                            &input.latitude,
                             &input.moving_activity,
                         ],
                     )
@@ -122,7 +122,7 @@ impl Mutation {
                     .map(|x| {
                         format!(
                             "ST_SetSRID(ST_MakePoint({}, {}), 4326)",
-                            x.latitude, x.longitude
+                            x.longitude, x.latitude
                         )
                     })
                     .collect();
