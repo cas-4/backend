@@ -1,4 +1,4 @@
-use crate::graphql::types::{position, user};
+use crate::graphql::types::*;
 use async_graphql::{Context, Object};
 
 /// Query struct
@@ -42,5 +42,15 @@ impl Query {
         >,
     ) -> Result<Option<Vec<position::Position>>, String> {
         position::last_positions(ctx, moving_activity).await
+    }
+
+    /// Returns all the positions
+    async fn alerts<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        #[graphql(desc = "Limit results")] limit: Option<i64>,
+        #[graphql(desc = "Offset results")] offset: Option<i64>,
+    ) -> Result<Option<Vec<alert::Alert>>, String> {
+        alert::get_alerts(ctx, limit, offset).await
     }
 }

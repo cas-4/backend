@@ -18,3 +18,17 @@ CREATE TABLE positions(
     CONSTRAINT fk_users_id
         FOREIGN KEY(user_id) REFERENCES users(id)
 );
+
+CREATE TYPE level_alert AS ENUM ('One', 'Two', 'Three');
+
+CREATE TABLE alerts(
+    id SERIAL NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    area GEOMETRY(Polygon, 4326),
+    level level_alert NOT NULL,
+    reached_users INTEGER DEFAULT 0 NOT NULL,
+    PRIMARY KEY(id),
+    CONSTRAINT fk_users_id
+        FOREIGN KEY(user_id) REFERENCES users(id)
+);

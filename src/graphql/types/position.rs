@@ -1,5 +1,5 @@
 use crate::{dates::GraphQLDate, graphql::types::jwt::Authentication, state::AppState};
-use async_graphql::{Context, Enum, InputObject, Object};
+use async_graphql::{Context, Enum, InputObject, SimpleObject};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -67,7 +67,7 @@ impl ToSql for MovingActivity {
     to_sql_checked!();
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 /// Position struct
 pub struct Position {
     pub id: i32,
@@ -84,33 +84,6 @@ pub struct PositionInput {
     pub latitude: f64,
     pub longitude: f64,
     pub moving_activity: MovingActivity,
-}
-
-#[Object]
-impl Position {
-    async fn id(&self) -> i32 {
-        self.id
-    }
-
-    async fn user_id(&self) -> i32 {
-        self.user_id
-    }
-
-    async fn created_at(&self) -> GraphQLDate {
-        self.created_at.clone()
-    }
-
-    async fn latitude(&self) -> f64 {
-        self.latitude
-    }
-
-    async fn longitude(&self) -> f64 {
-        self.longitude
-    }
-
-    async fn moving_activity(&self) -> MovingActivity {
-        self.moving_activity
-    }
 }
 
 /// Get positions from the database

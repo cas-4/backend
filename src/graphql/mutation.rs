@@ -1,8 +1,10 @@
 use crate::{
     dates::GraphQLDate,
     graphql::types::{
+        alert,
         jwt::{self, Authentication},
         position,
+        user::find_user,
     },
     state::AppState,
 };
@@ -89,6 +91,71 @@ impl Mutation {
                     .collect();
 
                 Ok(positions[0].clone())
+            }
+        }
+    }
+
+    /// Make GraphQL request to create new alert. Only for admins.
+    async fn new_alert<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        input: alert::AlertInput,
+    ) -> FieldResult<alert::Alert> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
+
+        let auth: &Authentication = ctx.data().unwrap();
+        match auth {
+            Authentication::NotLogged => Err(Error::new("Can't find the owner")),
+            Authentication::Logged(claims) => {
+                let claim_user = find_user(client, claims.user_id)
+                    .await
+                    .expect("Should not be here");
+
+                if !claim_user.is_admin {
+                    return Err(Error::new("Unauthorized"));
+                }
+
+                let polygon: Vec<String> = input
+                    .points
+                    .iter()
+                    .map(|x| {
+                        format!(
+                            "ST_SetSRID(ST_MakePoint({}, {}), 4326)",
+                            x.latitude, x.longitude
+                        )
+                    })
+                    .collect();
+
+                let query = format!("INSERT INTO alerts (user_id, area, level)
+                        VALUES($1, ST_MakePolygon(
+                            ST_MakeLine(
+                                ARRAY[{}]
+                            )
+                        ), $2)
+                        RETURNING id, user_id, created_at, ST_AsText(area) as area, level, reached_users
+                        ", polygon.join(","));
+
+                match client.query(&query, &[&claims.user_id, &input.level]).await {
+                    Ok(rows) => {
+                        let alerts: Vec<alert::Alert> = rows
+                            .iter()
+                            .map(|row| alert::Alert {
+                                id: row.get("id"),
+                                user_id: row.get("user_id"),
+                                created_at: GraphQLDate(Utc::now()),
+                                area: row.get("area"),
+                                level: row.get("level"),
+                                reached_users: row.get("reached_users"),
+                            })
+                            .collect();
+
+                        // TODO: Send notifications
+
+                        Ok(alerts[0].clone())
+                    }
+                    Err(e) => Err(e.into()),
+                }
             }
         }
     }
