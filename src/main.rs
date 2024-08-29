@@ -11,13 +11,15 @@ use std::{net::SocketAddr, sync::Arc, time::Duration};
 use crate::config::CONFIG;
 use async_graphql::{EmptySubscription, Schema};
 use axum::{
-    http::{header, Request},
+    http::{header, Method, Request},
     routing::post,
     Extension, Router,
 };
 use tokio::net::TcpListener;
 use tower_http::{
-    classify::ServerErrorsFailureClass, sensitive_headers::SetSensitiveHeadersLayer,
+    classify::ServerErrorsFailureClass,
+    cors::{Any, CorsLayer},
+    sensitive_headers::SetSensitiveHeadersLayer,
     trace::TraceLayer,
 };
 
@@ -62,6 +64,12 @@ async fn create_app() -> Router {
                         tracing::error!("{} | {} s", error, latency.as_secs());
                     },
                 ),
+        )
+        .layer(
+            CorsLayer::new()
+                .allow_methods([Method::OPTIONS, Method::GET, Method::POST])
+                .allow_headers(vec![header::CONTENT_TYPE, header::AUTHORIZATION])
+                .allow_origin(Any),
         )
         .layer(Extension(state))
 }
