@@ -116,7 +116,7 @@ impl Mutation {
                     return Err(Error::new("Unauthorized"));
                 }
 
-                let polygon: Vec<String> = input
+                let points: String = input
                     .points
                     .iter()
                     .map(|x| {
@@ -125,16 +125,41 @@ impl Mutation {
                             x.longitude, x.latitude
                         )
                     })
-                    .collect();
+                    .collect::<Vec<String>>()
+                    .join(",");
 
-                let query = format!("INSERT INTO alerts (user_id, area, level)
-                        VALUES($1, ST_MakePolygon(
+                let polygon = format!(
+                    "ST_MakePolygon(
                             ST_MakeLine(
                                 ARRAY[{}]
                             )
-                        ), $2)
+                        )",
+                    points
+                );
+
+                match client
+                    .query(&format!("SELECT ST_IsValid({}) as is_valid", polygon), &[])
+                    .await
+                {
+                    Ok(rows) => {
+                        let valids: Vec<alert::PolygonValid> = rows
+                            .iter()
+                            .map(|row| alert::PolygonValid {
+                                is_valid: row.get("is_valid"),
+                            })
+                            .collect();
+
+                        if valids[0].is_valid == false {
+                            return Err(Error::new("Polygon is not valid"));
+                        }
+                    }
+                    Err(e) => return Err(e.into()),
+                };
+
+                let query = format!("INSERT INTO alerts (user_id, area, level)
+                        VALUES($1, {}, $2)
                         RETURNING id, user_id, created_at, ST_AsText(area) as area, level, reached_users
-                        ", polygon.join(","));
+                        ", polygon);
 
                 match client.query(&query, &[&claims.user_id, &input.level]).await {
                     Ok(rows) => {

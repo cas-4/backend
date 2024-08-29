@@ -55,6 +55,11 @@ impl ToSql for LevelAlert {
     to_sql_checked!();
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PolygonValid {
+    pub is_valid: bool,
+}
+
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 /// Alert struct
 pub struct Alert {
