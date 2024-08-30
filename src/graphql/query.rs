@@ -48,9 +48,10 @@ impl Query {
     async fn alerts<'ctx>(
         &self,
         ctx: &Context<'ctx>,
+        #[graphql(desc = "Filter by ID")] id: Option<i32>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<alert::Alert>>, String> {
-        alert::get_alerts(ctx, limit, offset).await
+        alert::get_alerts(ctx, id, limit, offset).await
     }
 }

@@ -87,6 +87,9 @@ pub struct AlertInput {
 pub async fn get_alerts<'ctx>(
     ctx: &Context<'ctx>,
 
+    // Optional filter by id.
+    id: Option<i32>,
+
     // Optional limit results
     limit: Option<i64>,
 
@@ -99,8 +102,17 @@ pub async fn get_alerts<'ctx>(
     match auth {
         Authentication::NotLogged => Err("Unauthorized".to_string()),
         Authentication::Logged(_) => {
-            let rows = client
-                .query(
+            let rows=
+            match id {
+                Some(id) => client.query(
+                    "SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area, level, reached_users
+                    FROM alerts
+                    WHERE id = $1",
+                    &[&id],
+                )
+                .await
+                .unwrap(),
+                None => client.query(
                     "SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area, level, reached_users
                     FROM alerts
                     ORDER BY id DESC
@@ -109,7 +121,9 @@ pub async fn get_alerts<'ctx>(
                     &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
                 )
                 .await
-                .unwrap();
+                .unwrap()
+
+            };
 
             let positions: Vec<Alert> = rows
                 .iter()
