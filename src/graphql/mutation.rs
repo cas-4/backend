@@ -39,7 +39,7 @@ impl Mutation {
             // Create a new claim using the found ID
             let claims = jwt::Claims::new(id[0]);
             let token = claims.get_token().unwrap();
-            Ok(jwt::AuthBody::new(token))
+            Ok(jwt::AuthBody::new(token, id[0]))
         } else {
             Err(Error::new("Invalid email or password"))
         }

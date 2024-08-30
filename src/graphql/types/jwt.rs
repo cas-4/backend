@@ -77,13 +77,16 @@ pub struct AuthBody {
     access_token: String,
     /// "Bearer" string
     token_type: String,
+    /// User id
+    user_id: i32,
 }
 
 impl AuthBody {
-    pub fn new(access_token: String) -> Self {
+    pub fn new(access_token: String, user_id: i32) -> Self {
         Self {
             access_token,
             token_type: "Bearer".to_string(),
+            user_id,
         }
     }
 }
