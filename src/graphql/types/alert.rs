@@ -1,6 +1,5 @@
-use crate::{dates::GraphQLDate, graphql::types::jwt::Authentication, state::AppState};
+use crate::{graphql::types::jwt::Authentication, state::AppState};
 use async_graphql::{Context, Enum, InputObject, SimpleObject};
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
@@ -65,7 +64,7 @@ pub struct PolygonValid {
 pub struct Alert {
     pub id: i32,
     pub user_id: i32,
-    pub created_at: GraphQLDate,
+    pub created_at: i64,
     pub area: String,
     pub level: LevelAlert,
     pub reached_users: i32,
@@ -102,7 +101,7 @@ pub async fn get_alerts<'ctx>(
         Authentication::Logged(_) => {
             let rows = client
                 .query(
-                    "SELECT id, user_id, created_at, ST_AsText(area) as area, level, reached_users
+                    "SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area, level, reached_users
                     FROM alerts
                     ORDER BY id DESC
                     LIMIT $1
@@ -117,7 +116,7 @@ pub async fn get_alerts<'ctx>(
                 .map(|row| Alert {
                     id: row.get("id"),
                     user_id: row.get("user_id"),
-                    created_at: GraphQLDate(Utc::now()),
+                    created_at: row.get::<_, f64>("created_at") as i64,
                     area: row.get("area"),
                     level: row.get("level"),
                     reached_users: row.get("reached_users"),

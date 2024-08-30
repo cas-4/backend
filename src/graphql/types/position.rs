@@ -1,6 +1,5 @@
-use crate::{dates::GraphQLDate, graphql::types::jwt::Authentication, state::AppState};
+use crate::{graphql::types::jwt::Authentication, state::AppState};
 use async_graphql::{Context, Enum, InputObject, SimpleObject};
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
@@ -72,7 +71,7 @@ impl ToSql for MovingActivity {
 pub struct Position {
     pub id: i32,
     pub user_id: i32,
-    pub created_at: GraphQLDate,
+    pub created_at: i64,
     pub latitude: f64,
     pub longitude: f64,
     pub moving_activity: MovingActivity,
@@ -115,7 +114,7 @@ pub async fn get_positions<'ctx>(
                 match user_id {
                     Some(id) => {
                         rows = client.query("
-                            SELECT id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions
                             WHERE user_id = $1
                             ORDER BY id DESC
@@ -125,7 +124,7 @@ pub async fn get_positions<'ctx>(
                     }
                     None => {
                         rows = client.query("
-                            SELECT id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions
                             ORDER BY id DESC
                             LIMIT $1
@@ -135,7 +134,7 @@ pub async fn get_positions<'ctx>(
                 }
             } else {
                 rows = client.query("
-                    SELECT id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                    SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                     FROM positions
                     WHERE user_id = $1
                     ORDER BY id DESC
@@ -149,7 +148,7 @@ pub async fn get_positions<'ctx>(
                 .map(|row| Position {
                     id: row.get("id"),
                     user_id: row.get("user_id"),
-                    created_at: GraphQLDate(Utc::now()),
+                    created_at: row.get::<_, f64>("created_at") as i64,
                     latitude: row.get("latitude"),
                     longitude: row.get("longitude"),
                     moving_activity: row.get("activity"),
@@ -186,7 +185,7 @@ pub async fn last_positions<'ctx>(
             let rows = client
                         .query(
                             "SELECT DISTINCT ON (user_id) 
-                                id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                                id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions ORDER BY user_id, created_at DESC",
                             &[],
                         )
@@ -199,7 +198,7 @@ pub async fn last_positions<'ctx>(
                     .map(|row| Position {
                         id: row.get("id"),
                         user_id: row.get("user_id"),
-                        created_at: GraphQLDate(Utc::now()),
+                        created_at: row.get::<_, f64>("created_at") as i64,
                         latitude: row.get("latitude"),
                         longitude: row.get("longitude"),
                         moving_activity: row.get("activity"),
@@ -211,7 +210,7 @@ pub async fn last_positions<'ctx>(
                     .map(|row| Position {
                         id: row.get("id"),
                         user_id: row.get("user_id"),
-                        created_at: GraphQLDate(Utc::now()),
+                        created_at: row.get::<_, f64>("created_at") as i64,
                         latitude: row.get("latitude"),
                         longitude: row.get("longitude"),
                         moving_activity: row.get("activity"),

@@ -1,5 +1,4 @@
 use crate::{
-    dates::GraphQLDate,
     graphql::types::{
         alert,
         jwt::{self, Authentication},
@@ -9,7 +8,6 @@ use crate::{
     state::AppState,
 };
 use async_graphql::{Context, Error, FieldResult, Object};
-use chrono::Utc;
 
 /// Mutation struct
 pub struct Mutation;
@@ -66,7 +64,7 @@ impl Mutation {
                             ST_SetSRID(ST_MakePoint($2, $3), 4326),
                             $4
                         )
-                        RETURNING id, user_id, created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                        RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                         ",
                         &[
                             &claims.user_id,
@@ -83,7 +81,7 @@ impl Mutation {
                     .map(|row| position::Position {
                         id: row.get("id"),
                         user_id: row.get("user_id"),
-                        created_at: GraphQLDate(Utc::now()),
+                        created_at: row.get::<_, f64>("created_at") as i64,
                         latitude: row.get("latitude"),
                         longitude: row.get("longitude"),
                         moving_activity: row.get("activity"),
@@ -158,7 +156,7 @@ impl Mutation {
 
                 let query = format!("INSERT INTO alerts (user_id, area, level)
                         VALUES($1, {}, $2)
-                        RETURNING id, user_id, created_at, ST_AsText(area) as area, level, reached_users
+                        RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area, level, reached_users
                         ", polygon);
 
                 match client.query(&query, &[&claims.user_id, &input.level]).await {
@@ -168,7 +166,7 @@ impl Mutation {
                             .map(|row| alert::Alert {
                                 id: row.get("id"),
                                 user_id: row.get("user_id"),
-                                created_at: GraphQLDate(Utc::now()),
+                                created_at: row.get::<_, f64>("created_at") as i64,
                                 area: row.get("area"),
                                 level: row.get("level"),
                                 reached_users: row.get("reached_users"),
