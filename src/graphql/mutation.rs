@@ -154,10 +154,29 @@ impl Mutation {
                     Err(e) => return Err(e.into()),
                 };
 
-                let query = format!("INSERT INTO alerts (user_id, area, level)
+                let query = format!(
+                    "INSERT INTO alerts (user_id, area, level)
                         VALUES($1, {}, $2)
-                        RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area, level, reached_users
-                        ", polygon);
+                        RETURNING
+                            id,
+                            user_id,
+                            extract(epoch from created_at)::double precision as created_at,
+                            ST_AsText(area) as area,
+                            ST_AsText(
+                                ST_Buffer(
+                                    area::geography,
+                                    CASE
+                                        WHEN level = 'One' THEN 0
+                                        WHEN level = 'Two' THEN 1000
+                                        WHEN level = 'Three' THEN 2000
+                                        ELSE 0
+                                    END
+                                )
+                            ) as extended_area,
+                            level,
+                            reached_users",
+                    polygon
+                );
 
                 match client.query(&query, &[&claims.user_id, &input.level]).await {
                     Ok(rows) => {
@@ -168,6 +187,7 @@ impl Mutation {
                                 user_id: row.get("user_id"),
                                 created_at: row.get::<_, f64>("created_at") as i64,
                                 area: row.get("area"),
+                                extended_area: row.get("extended_area"),
                                 level: row.get("level"),
                                 reached_users: row.get("reached_users"),
                             })

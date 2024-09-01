@@ -66,6 +66,7 @@ pub struct Alert {
     pub user_id: i32,
     pub created_at: i64,
     pub area: String,
+    pub extended_area: String,
     pub level: LevelAlert,
     pub reached_users: i32,
 }
@@ -102,27 +103,59 @@ pub async fn get_alerts<'ctx>(
     match auth {
         Authentication::NotLogged => Err("Unauthorized".to_string()),
         Authentication::Logged(_) => {
-            let rows=
-            match id {
-                Some(id) => client.query(
-                    "SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area, level, reached_users
+            let rows = match id {
+                Some(id) => client
+                    .query(
+                        "SELECT id,
+                            user_id,
+                            extract(epoch from created_at)::double precision as created_at,
+                            ST_AsText(area) as area,
+                            ST_AsText(
+                                ST_Buffer(
+                                    area::geography,
+                                    CASE
+                                        WHEN level = 'One' THEN 0
+                                        WHEN level = 'Two' THEN 1000
+                                        WHEN level = 'Three' THEN 2000
+                                        ELSE 0
+                                    END
+                                )
+                            ) as extended_area,
+                            level,
+                            reached_users
                     FROM alerts
                     WHERE id = $1",
-                    &[&id],
-                )
-                .await
-                .unwrap(),
-                None => client.query(
-                    "SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area, level, reached_users
+                        &[&id],
+                    )
+                    .await
+                    .unwrap(),
+                None => client
+                    .query(
+                        "SELECT id,
+                        user_id,
+                        extract(epoch from created_at)::double precision as created_at,
+                        ST_AsText(area) as area,
+                        ST_AsText(
+                            ST_Buffer(
+                                area::geography,
+                                CASE
+                                    WHEN level = 'One' THEN 0
+                                    WHEN level = 'Two' THEN 1000
+                                    WHEN level = 'Three' THEN 2000
+                                    ELSE 0
+                                END
+                            )
+                        ) as extended_area,
+                        level,
+                        reached_users
                     FROM alerts
                     ORDER BY id DESC
                     LIMIT $1
                     OFFSET $2",
-                    &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
-                )
-                .await
-                .unwrap()
-
+                        &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
+                    )
+                    .await
+                    .unwrap(),
             };
 
             let positions: Vec<Alert> = rows
@@ -132,6 +165,7 @@ pub async fn get_alerts<'ctx>(
                     user_id: row.get("user_id"),
                     created_at: row.get::<_, f64>("created_at") as i64,
                     area: row.get("area"),
+                    extended_area: row.get("extended_area"),
                     level: row.get("level"),
                     reached_users: row.get("reached_users"),
                 })
