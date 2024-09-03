@@ -158,7 +158,7 @@ pub async fn get_alerts<'ctx>(
                     .unwrap(),
             };
 
-            let positions: Vec<Alert> = rows
+            let alerts: Vec<Alert> = rows
                 .iter()
                 .map(|row| Alert {
                     id: row.get("id"),
@@ -171,7 +171,7 @@ pub async fn get_alerts<'ctx>(
                 })
                 .collect();
 
-            Ok(Some(positions))
+            Ok(Some(alerts))
         }
     }
 }
