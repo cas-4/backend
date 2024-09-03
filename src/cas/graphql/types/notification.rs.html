@@ -133,6 +133,9 @@
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
     state::AppState,
@@ -153,7 +156,10 @@
 </span><span class="kw">pub async fn </span>get_notifications&lt;<span class="lifetime">'ctx</span>&gt;(
     ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
 
-    <span class="comment">// Optional filter by id.
+    <span class="comment">// Filter for `seen` field
+    </span>seen: bool,
+
+    <span class="comment">// Optional filter by alert id
     </span>alert_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
 
     <span class="comment">// Optional limit results
@@ -175,7 +181,7 @@
             <span class="kw">let </span>limit = limit.unwrap_or(<span class="number">20</span>);
             <span class="kw">let </span>offset = offset.unwrap_or(<span class="number">0</span>);
 
-            <span class="kw">let </span><span class="kw-2">mut </span>base_query = <span class="string">"SELECT n.id,
+            <span class="kw">let </span>base_query = <span class="string">"SELECT n.id,
                                 n.alert_id,
                                 n.position_id,
                                 n.seen,
@@ -208,31 +214,31 @@
                         JOIN positions p ON n.position_id = p.id"</span>.to_string();
 
             <span class="kw">let </span>rows = <span class="kw">match </span>alert_id {
-                <span class="prelude-val">Some</span>(id) <span class="kw">if </span>claim_user.is_admin =&gt; 
+                <span class="prelude-val">Some</span>(id) <span class="kw">if </span>claim_user.is_admin =&gt;
                         client
                         .query(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                            <span class="string">"{base_query} WHERE n.alert_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"</span>,
-                        ), <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset])
+                            <span class="string">"{base_query} WHERE seen = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4"</span>,
+                        ), <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>seen, <span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset])
                         .<span class="kw">await
                         </span>.unwrap(),
                 <span class="prelude-val">Some </span>(id) =&gt;
                     client
                     .query(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                        <span class="string">"{base_query} WHERE p.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4"</span>,
-                    ), <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset])
+                        <span class="string">"{base_query} WHERE seen = $1 AND p.user_id = $2 AND n.alert_id = $3 ORDER BY n.id DESC LIMIT $4 OFFSET $5"</span>,
+                    ), <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>seen, <span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset])
                     .<span class="kw">await
                     </span>.unwrap(),
                 <span class="prelude-val">None </span><span class="kw">if </span>claim_user.is_admin =&gt; client
                     .query(
-                        <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{base_query} ORDER BY n.id DESC LIMIT $1 OFFSET $2"</span>),
-                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset],
+                        <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{base_query} WHERE seen = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"</span>),
+                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>seen, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset],
                     )
                     .<span class="kw">await
                     </span>.unwrap(),
                 <span class="prelude-val">None </span>=&gt;
                     client.query(
-                        <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{base_query} WHERE p.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"</span>),
-                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset],
+                        <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{base_query} WHERE seen = $1 AND p.user_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4"</span>),
+                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>seen, <span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset],
                     )
                     .<span class="kw">await
                     </span>.unwrap(),
