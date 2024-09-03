@@ -87,6 +87,23 @@
 <a href="#87" id="87">87</a>
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graphql::types::<span class="kw-2">*</span>;
 <span class="kw">use </span>async_graphql::{Context, Object};
 
@@ -100,14 +117,14 @@
         <span class="string">"1.0"
     </span>}
 
-    <span class="doccomment">/// Returns all the users
+    <span class="doccomment">/// Returns all the users. It is restricted to admins only.
     ///
     /// Request example:
     /// ```text
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{users(limit: 2) { id, email, password, isAdmin }}"}'
+    /// -d '{"query":"{users(limit: 2) { id, email, password, name, address, isAdmin }}"}'
     /// ```
     </span><span class="kw">async fn </span>users&lt;<span class="lifetime">'ctx</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -116,6 +133,23 @@
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;user::User&gt;&gt;, String&gt; {
         user::get_users(ctx, limit, offset).<span class="kw">await
+    </span>}
+
+    <span class="doccomment">/// Returns an user by ID. Admins can check everyone.
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"{user(id: 1) { id, email, password, name, address, isAdmin }}"}'
+    /// ```
+    </span><span class="kw">async fn </span>user&lt;<span class="lifetime">'ctx</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
+        <span class="attr">#[graphql(desc = <span class="string">"User to find"</span>)] </span>id: i32,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;user::User, String&gt; {
+        user::get_user_by_id(ctx, id).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Returns all the positions
