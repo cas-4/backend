@@ -392,7 +392,7 @@ dependencies = [
 
 [[package]]
 name = "cas"
-version = "0.0.1-a"
+version = "0.0.2"
 dependencies = [
  "async-graphql",
  "async-graphql-axum",
