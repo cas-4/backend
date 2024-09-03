@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["find_user","get_users"],"struct":["User"]};

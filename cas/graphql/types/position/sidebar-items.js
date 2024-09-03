@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MovingActivity"],"fn":["get_positions","last_positions"],"struct":["Position","PositionInput"]};
