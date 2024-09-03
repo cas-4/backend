@@ -18,7 +18,7 @@ impl Query {
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{users(limit: 2) { id, email, password, isAdmin }}"}'
+    /// -d '{"query":"{users(limit: 2) { id, email, password, name, address, isAdmin }}"}'
     /// ```
     async fn users<'ctx>(
         &self,

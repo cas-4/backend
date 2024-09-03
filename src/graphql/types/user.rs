@@ -11,6 +11,8 @@ pub struct User {
     pub id: i32,
     pub email: String,
     pub password: String,
+    pub name: Option<String>,
+    pub address: Option<String>,
     pub is_admin: bool,
 }
 
@@ -26,6 +28,14 @@ impl User {
 
     async fn password(&self) -> String {
         String::from("******")
+    }
+
+    async fn name(&self) -> String {
+        self.name.clone().unwrap_or(String::default())
+    }
+
+    async fn address(&self) -> String {
+        self.address.clone().unwrap_or(String::default())
     }
 
     async fn is_admin(&self) -> bool {
@@ -50,7 +60,7 @@ pub async fn get_users<'ctx>(
         Authentication::Logged(_claims) => {
             let rows = client
                 .query(
-                    "SELECT id, email, password, is_admin FROM users LIMIT $1 OFFSET $2",
+                    "SELECT id, email, password, name, address, is_admin FROM users LIMIT $1 OFFSET $2",
                     &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
                 )
                 .await
@@ -62,6 +72,8 @@ pub async fn get_users<'ctx>(
                     id: row.get("id"),
                     email: row.get("email"),
                     password: row.get("password"),
+                    name: row.get("name"),
+                    address: row.get("address"),
                     is_admin: row.get("is_admin"),
                 })
                 .collect();
@@ -75,7 +87,7 @@ pub async fn get_users<'ctx>(
 pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
     let rows = client
         .query(
-            "SELECT id, email, password, is_admin FROM users WHERE id = $1",
+            "SELECT id, email, password, name, address, is_admin FROM users WHERE id = $1",
             &[&id],
         )
         .await
@@ -87,6 +99,8 @@ pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
             id: row.get("id"),
             email: row.get("email"),
             password: row.get("password"),
+            name: row.get("name"),
+            address: row.get("address"),
             is_admin: row.get("is_admin"),
         })
         .collect();
