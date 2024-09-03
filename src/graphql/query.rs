@@ -111,17 +111,18 @@ impl Query {
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{notifications(alertId: 1) {
+    /// -d '{"query":"{notifications(seen: false alertId: 1) {
     /// id, alert { id, userId, createdAt, area, extendedArea, level, reachedUsers }, position {id, userId, createdAt, latitude, longitude, movingActivity}, seen, createdAt
     /// }}"}'
     /// ```
     async fn notifications<'ctx>(
         &self,
         ctx: &Context<'ctx>,
+        #[graphql(desc = "Show only seen or not notifications")] seen: bool,
         #[graphql(desc = "Filter by alert ID")] alert_id: Option<i32>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<notification::Notification>>, String> {
-        notification::get_notifications(ctx, alert_id, limit, offset).await
+        notification::get_notifications(ctx, seen, alert_id, limit, offset).await
     }
 }

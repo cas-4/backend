@@ -18,7 +18,10 @@ pub struct Notification {
 pub async fn get_notifications<'ctx>(
     ctx: &Context<'ctx>,
 
-    // Optional filter by id.
+    // Filter for `seen` field
+    seen: bool,
+
+    // Optional filter by alert id
     alert_id: Option<i32>,
 
     // Optional limit results
@@ -40,7 +43,7 @@ pub async fn get_notifications<'ctx>(
             let limit = limit.unwrap_or(20);
             let offset = offset.unwrap_or(0);
 
-            let mut base_query = "SELECT n.id,
+            let base_query = "SELECT n.id,
                                 n.alert_id,
                                 n.position_id,
                                 n.seen,
@@ -73,31 +76,31 @@ pub async fn get_notifications<'ctx>(
                         JOIN positions p ON n.position_id = p.id".to_string();
 
             let rows = match alert_id {
-                Some(id) if claim_user.is_admin => 
+                Some(id) if claim_user.is_admin =>
                         client
                         .query(&format!(
-                            "{base_query} WHERE n.alert_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3",
-                        ), &[&id, &limit, &offset])
+                            "{base_query} WHERE seen = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
+                        ), &[&seen, &id, &limit, &offset])
                         .await
                         .unwrap(),
                 Some (id) =>
                     client
                     .query(&format!(
-                        "{base_query} WHERE p.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
-                    ), &[&claim_user.id, &id, &limit, &offset])
+                        "{base_query} WHERE seen = $1 AND p.user_id = $2 AND n.alert_id = $3 ORDER BY n.id DESC LIMIT $4 OFFSET $5",
+                    ), &[&seen, &claim_user.id, &id, &limit, &offset])
                     .await
                     .unwrap(),
                 None if claim_user.is_admin => client
                     .query(
-                        &format!("{base_query} ORDER BY n.id DESC LIMIT $1 OFFSET $2"),
-                        &[&limit, &offset],
+                        &format!("{base_query} WHERE seen = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
+                        &[&seen, &limit, &offset],
                     )
                     .await
                     .unwrap(),
                 None =>
                     client.query(
-                        &format!("{base_query} WHERE p.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
-                        &[&claim_user.id, &limit, &offset],
+                        &format!("{base_query} WHERE seen = $1 AND p.user_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4"),
+                        &[&seen, &claim_user.id, &limit, &offset],
                     )
                     .await
                     .unwrap(),
