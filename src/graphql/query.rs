@@ -103,4 +103,25 @@ impl Query {
     ) -> Result<Option<Vec<alert::Alert>>, String> {
         alert::get_alerts(ctx, id, limit, offset).await
     }
+
+    /// Returns all the notifications. They can be filtered by an alert id.
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"{notifications(alertId: 1) {
+    /// id, alert { id, userId, createdAt, area, extendedArea, level, reachedUsers }, position {id, userId, createdAt, latitude, longitude, movingActivity}, seen, createdAt
+    /// }}"}'
+    /// ```
+    async fn notifications<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        #[graphql(desc = "Filter by alert ID")] alert_id: Option<i32>,
+        #[graphql(desc = "Limit results")] limit: Option<i64>,
+        #[graphql(desc = "Offset results")] offset: Option<i64>,
+    ) -> Result<Option<Vec<notification::Notification>>, String> {
+        notification::get_notifications(ctx, alert_id, limit, offset).await
+    }
 }
