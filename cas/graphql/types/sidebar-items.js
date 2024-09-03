@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["alert","jwt","position","user"]};
+window.SIDEBAR_ITEMS = {"mod":["alert","jwt","notification","position","user"]};

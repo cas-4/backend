@@ -335,7 +335,7 @@
                     </span>.unwrap(),
             };
 
-            <span class="kw">let </span>positions: Vec&lt;Alert&gt; = rows
+            <span class="kw">let </span>alerts: Vec&lt;Alert&gt; = rows
                 .iter()
                 .map(|row| Alert {
                     id: row.get(<span class="string">"id"</span>),
@@ -348,7 +348,7 @@
                 })
                 .collect();
 
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(positions))
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(alerts))
         }
     }
 }

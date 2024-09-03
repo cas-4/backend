@@ -104,6 +104,27 @@
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graphql::types::<span class="kw-2">*</span>;
 <span class="kw">use </span>async_graphql::{Context, Object};
 
@@ -208,6 +229,27 @@
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;alert::Alert&gt;&gt;, String&gt; {
         alert::get_alerts(ctx, id, limit, offset).<span class="kw">await
+    </span>}
+
+    <span class="doccomment">/// Returns all the notifications. They can be filtered by an alert id.
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"{notifications(alertId: 1) {
+    /// id, alert { id, userId, createdAt, area, extendedArea, level, reachedUsers }, position {id, userId, createdAt, latitude, longitude, movingActivity}, seen, createdAt
+    /// }}"}'
+    /// ```
+    </span><span class="kw">async fn </span>notifications&lt;<span class="lifetime">'ctx</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
+        <span class="attr">#[graphql(desc = <span class="string">"Filter by alert ID"</span>)] </span>alert_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
+        <span class="attr">#[graphql(desc = <span class="string">"Limit results"</span>)] </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+        <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;notification::Notification&gt;&gt;, String&gt; {
+        notification::get_notifications(ctx, alert_id, limit, offset).<span class="kw">await
     </span>}
 }
 </code></pre></div></section></main></body></html>
