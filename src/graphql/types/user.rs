@@ -57,7 +57,15 @@ pub async fn get_users<'ctx>(
     let auth: &Authentication = ctx.data().unwrap();
     match auth {
         Authentication::NotLogged => Err("Unauthorized".to_string()),
-        Authentication::Logged(_claims) => {
+        Authentication::Logged(claims) => {
+            let claim_user = find_user(client, claims.user_id)
+                .await
+                .expect("Should not be here");
+
+            if !claim_user.is_admin {
+                return Err("Unauthorized".to_string());
+            }
+
             let rows = client
                 .query(
                     "SELECT id, email, password, name, address, is_admin FROM users LIMIT $1 OFFSET $2",
