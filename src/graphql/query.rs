@@ -12,6 +12,14 @@ impl Query {
     }
 
     /// Returns all the users
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"{users(limit: 2) { id, email, password, isAdmin }}"}'
+    /// ```
     async fn users<'ctx>(
         &self,
         ctx: &Context<'ctx>,
@@ -22,6 +30,14 @@ impl Query {
     }
 
     /// Returns all the positions
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"{positions {id, userId, createdAt, latitude, longitude, movingActivity}}"}'
+    /// ```
     async fn positions<'ctx>(
         &self,
         ctx: &Context<'ctx>,
@@ -34,6 +50,14 @@ impl Query {
 
     /// Returns all the last positions for each user.
     /// It is restricted to only admin users.
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"lastPositions(movingActivity: IN_VEHICLE) {id, userId, createdAt, latitude, longitude, movingActivity}}"}'
+    /// ```
     async fn last_positions<'ctx>(
         &self,
         ctx: &Context<'ctx>,
@@ -45,6 +69,14 @@ impl Query {
     }
 
     /// Returns all the positions
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"{alerts(id: 12) {id, userId, createdAt, area, extendedArea, level}}"}'
+    /// ```
     async fn alerts<'ctx>(
         &self,
         ctx: &Context<'ctx>,

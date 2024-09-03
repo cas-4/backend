@@ -15,6 +15,21 @@ pub struct Mutation;
 #[Object]
 impl Mutation {
     /// Make GraphQL login
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -d '{
+    ///   "query": "mutation Login($input: LoginCredentials!) { login(input: $input) { accessToken tokenType userId } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "email": "***",
+    ///       "password": "***"
+    ///     }
+    ///   }
+    /// }'
+    /// ```
     async fn login<'ctx>(
         &self,
         ctx: &Context<'ctx>,
@@ -44,6 +59,23 @@ impl Mutation {
     }
 
     /// Make GraphQL request to create new position to track
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -H "Authorization: Bearer ***" \
+    /// -d '{
+    ///   "query": "mutation NewPosition($input: PositionInput!) { newPosition(input: $input) { id userId createdAt latitude longitude movingActivity } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "latitude": 44.50800643571219,
+    ///       "longitude": 11.299600981136905,
+    ///       "movingActivity": "STILL"
+    ///     }
+    ///   }
+    /// }'
+    /// ```
     async fn new_position<'ctx>(
         &self,
         ctx: &Context<'ctx>,
@@ -94,6 +126,27 @@ impl Mutation {
     }
 
     /// Make GraphQL request to create new alert. Only for admins.
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -H "Authorization: Bearer ****" \
+    /// -d '{
+    ///   "query": "mutation NewAlert($input: AlertInput!) { newAlert(input: $input) { id createdAt level } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "points": [
+    ///         { "latitude": 44.490025, "longitude": 11.311499},
+    ///         { "latitude": 44.490361, "longitude": 11.327903},
+    ///         { "latitude": 44.497280, "longitude": 11.327776},
+    ///         { "latitude": 44.498321, "longitude": 11.312145},
+    ///         { "latitude": 44.490025, "longitude": 11.311498}
+    ///       ],
+    ///       "level": "TWO"
+    ///     }
+    ///   }
+    /// }
     async fn new_alert<'ctx>(
         &self,
         ctx: &Context<'ctx>,
