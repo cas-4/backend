@@ -11,7 +11,7 @@ impl Query {
         "1.0"
     }
 
-    /// Returns all the users
+    /// Returns all the users. It is restricted to admins only.
     ///
     /// Request example:
     /// ```text
@@ -27,6 +27,23 @@ impl Query {
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<user::User>>, String> {
         user::get_users(ctx, limit, offset).await
+    }
+
+    /// Returns an user by ID. Admins can check everyone.
+    ///
+    /// Request example:
+    /// ```text
+    /// curl http://localhost:8000/graphql
+    /// -H 'authorization: Bearer ***'
+    /// -H 'content-type: application/json'
+    /// -d '{"query":"{user(id: 1) { id, email, password, name, address, isAdmin }}"}'
+    /// ```
+    async fn user<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        #[graphql(desc = "User to find")] id: i32,
+    ) -> Result<user::User, String> {
+        user::get_user_by_id(ctx, id).await
     }
 
     /// Returns all the positions

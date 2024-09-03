@@ -91,6 +91,62 @@ pub async fn get_users<'ctx>(
     }
 }
 
+/// Get users from the database
+pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, String> {
+    let state = ctx.data::<AppState>().expect("Can't connect to db");
+    let client = &*state.client;
+    let auth: &Authentication = ctx.data().unwrap();
+    match auth {
+        Authentication::NotLogged => Err("Unauthorized".to_string()),
+        Authentication::Logged(claims) => {
+            let claim_user = find_user(client, claims.user_id)
+                .await
+                .expect("Should not be here");
+
+            let rows;
+            if claim_user.is_admin {
+                rows = client
+                    .query(
+                        "SELECT id, email, password, name, address, is_admin FROM users
+                            WHERE id = $1",
+                        &[&id],
+                    )
+                    .await
+                    .unwrap();
+            } else if claims.user_id != id {
+                return Err("Unauthorized".to_string());
+            } else {
+                rows = client
+                    .query(
+                        "SELECT id, email, password, name, address, is_admin FROM users
+                            WHERE id = $1",
+                        &[&claims.user_id],
+                    )
+                    .await
+                    .unwrap();
+            }
+
+            let users: Vec<User> = rows
+                .iter()
+                .map(|row| User {
+                    id: row.get("id"),
+                    email: row.get("email"),
+                    password: row.get("password"),
+                    name: row.get("name"),
+                    address: row.get("address"),
+                    is_admin: row.get("is_admin"),
+                })
+                .collect();
+
+            if users.len() == 0 {
+                return Err("Not found".to_string());
+            }
+
+            Ok(users[0].clone())
+        }
+    }
+}
+
 /// Find an user with id = `id` using the PostgreSQL `client`
 pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
     let rows = client
