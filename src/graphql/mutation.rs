@@ -2,7 +2,7 @@ use crate::{
     graphql::types::{
         alert,
         jwt::{self, Authentication},
-        position,
+        notification, position,
         user::{self, find_user},
     },
     state::AppState,
@@ -203,10 +203,7 @@ impl Mutation {
         match auth {
             Authentication::NotLogged => Err(Error::new("Can't find the owner")),
             Authentication::Logged(claims) => {
-                let claim_user = find_user(client, claims.user_id)
-                    .await
-                    .expect("Should not be here");
-
+                let claim_user = find_user(client, claims.user_id).await.unwrap();
                 if !claim_user.is_admin {
                     return Err(Error::new("Unauthorized"));
                 }
@@ -223,79 +220,85 @@ impl Mutation {
                     .collect::<Vec<String>>()
                     .join(",");
 
-                let polygon = format!(
-                    "ST_MakePolygon(
-                            ST_MakeLine(
-                                ARRAY[{}]
-                            )
-                        )",
-                    points
-                );
+                let polygon = format!("ST_MakePolygon(ST_MakeLine(ARRAY[{}]))", points);
 
-                match client
-                    .query(&format!("SELECT ST_IsValid({}) as is_valid", polygon), &[])
-                    .await
-                {
-                    Ok(rows) => {
-                        let valids: Vec<alert::PolygonValid> = rows
-                            .iter()
-                            .map(|row| alert::PolygonValid {
-                                is_valid: row.get("is_valid"),
-                            })
-                            .collect();
+                let valid_query = format!("SELECT ST_IsValid({}) as is_valid", polygon);
+                let rows = client.query(&valid_query, &[]).await.unwrap();
 
-                        if valids[0].is_valid == false {
-                            return Err(Error::new("Polygon is not valid"));
-                        }
-                    }
-                    Err(e) => return Err(e.into()),
-                };
+                let is_valid: bool = rows[0].get("is_valid");
+                if !is_valid {
+                    return Err(Error::new("Polygon is not valid"));
+                }
 
-                let query = format!(
+                let insert_query = format!(
                     "INSERT INTO alerts (user_id, area, level)
-                        VALUES($1, {}, $2)
-                        RETURNING
-                            id,
-                            user_id,
-                            extract(epoch from created_at)::double precision as created_at,
-                            ST_AsText(area) as area,
-                            ST_AsText(
-                                ST_Buffer(
-                                    area::geography,
-                                    CASE
-                                        WHEN level = 'One' THEN 0
-                                        WHEN level = 'Two' THEN 1000
-                                        WHEN level = 'Three' THEN 2000
-                                        ELSE 0
-                                    END
-                                )
-                            ) as extended_area,
-                            level,
-                            reached_users",
+                    VALUES($1, {}, $2)
+                    RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area,
+                    ST_AsText(ST_Buffer(area::geography, CASE WHEN level = 'One' THEN 0 WHEN level = 'Two' THEN 1000 WHEN level = 'Three' THEN 2000 ELSE 0 END)) as extended_area, level, reached_users",
                     polygon
                 );
 
-                match client.query(&query, &[&claims.user_id, &input.level]).await {
-                    Ok(rows) => {
-                        let alerts: Vec<alert::Alert> = rows
-                            .iter()
-                            .map(|row| alert::Alert {
-                                id: row.get("id"),
-                                user_id: row.get("user_id"),
-                                created_at: row.get::<_, f64>("created_at") as i64,
-                                area: row.get("area"),
-                                extended_area: row.get("extended_area"),
-                                level: row.get("level"),
-                                reached_users: row.get("reached_users"),
-                            })
-                            .collect();
+                let rows = client
+                    .query(&insert_query, &[&claims.user_id, &input.level])
+                    .await
+                    .unwrap();
+                let mut alert = rows
+                    .iter()
+                    .map(|row| alert::Alert {
+                        id: row.get("id"),
+                        user_id: row.get("user_id"),
+                        created_at: row.get::<_, f64>("created_at") as i64,
+                        area: row.get("area"),
+                        extended_area: row.get("extended_area"),
+                        level: row.get("level"),
+                        reached_users: row.get("reached_users"),
+                    })
+                    .collect::<Vec<alert::Alert>>()
+                    .first()
+                    .cloned()
+                    .ok_or_else(|| Error::new("Failed to create alert"))?;
 
-                        // TODO: Send notifications
+                let distance: f64 = match alert.level {
+                    alert::LevelAlert::One => 0.0,
+                    alert::LevelAlert::Two => 1000.0,
+                    alert::LevelAlert::Three => 2000.0,
+                };
 
-                        Ok(alerts[0].clone())
-                    }
-                    Err(e) => Err(e.into()),
+                let position_ids: Vec<i32> = client
+                    .query(
+                        "
+                        SELECT id FROM positions
+                        WHERE ST_DWithin(
+                            location::geography,
+                            (SELECT area::geography FROM alerts WHERE id = $1),
+                            $2
+                        )",
+                        &[&alert.id, &distance],
+                    )
+                    .await
+                    .unwrap()
+                    .iter()
+                    .map(|row| row.get(0))
+                    .collect();
+
+                let mut notification_ids = vec![];
+                for id in position_ids {
+                    let notification = notification::Notification::new(client, alert.id, id)
+                        .await
+                        .unwrap();
+                    notification_ids.push(notification);
                 }
+
+                alert.reached_users = notification_ids.len() as i32;
+                client
+                    .query(
+                        "UPDATE alerts SET reached_users = $1 WHERE id = $2",
+                        &[&alert.reached_users, &alert.id],
+                    )
+                    .await
+                    .unwrap();
+
+                Ok(alert)
             }
         }
     }

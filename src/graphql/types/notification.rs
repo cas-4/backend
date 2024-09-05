@@ -1,9 +1,11 @@
 use crate::{
+    errors::AppError,
     graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
     state::AppState,
 };
 use async_graphql::{Context, SimpleObject};
 use serde::{Deserialize, Serialize};
+use tokio_postgres::Client;
 
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 /// Notification struct
@@ -14,6 +16,30 @@ pub struct Notification {
     pub seen: bool,
     pub created_at: i64,
 }
+
+impl Notification {
+    /// Create a new notification into the database from an alert_id and a position_id.
+    /// Returns the new ID.
+    pub async fn new(client: &Client, alert_id: i32, position_id: i32) -> Result<i32, AppError> {
+        match client
+            .query(
+                "INSERT INTO notifications(alert_id, position_id)
+                VALUES($1, $2)
+                RETURNING id
+                ",
+                &[&alert_id, &position_id],
+            )
+            .await
+        {
+            Ok(rows) => {
+                let row = rows[0].clone();
+                Ok(row.get("id"))
+            }
+            Err(_) => Err(AppError::Database),
+        }
+    }
+}
+
 /// Get notifications from the database
 pub async fn get_notifications<'ctx>(
     ctx: &Context<'ctx>,
