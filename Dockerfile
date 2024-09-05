@@ -1,5 +1,5 @@
 # Stage 1
-FROM rust:latest as builder
+FROM rust:latest AS builder
 
 WORKDIR /app
 COPY . .
@@ -11,6 +11,7 @@ FROM debian:bookworm-slim
 
 RUN mkdir -p /app
 
+RUN apt-get update && apt-get install -y libssl-dev
 RUN groupadd -g 999 appuser && \
     useradd -r -u 999 -g appuser appuser
 
