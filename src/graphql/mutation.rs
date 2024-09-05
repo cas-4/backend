@@ -1,4 +1,5 @@
 use crate::{
+    expo,
     graphql::types::{
         alert,
         jwt::{self, Authentication},
@@ -282,8 +283,8 @@ impl Mutation {
                     .collect();
 
                 let mut notification_ids = vec![];
-                for id in position_ids {
-                    let notification = notification::Notification::new(client, alert.id, id)
+                for id in &position_ids {
+                    let notification = notification::Notification::new(client, alert.id, *id)
                         .await
                         .unwrap();
                     notification_ids.push(notification);
@@ -297,6 +298,37 @@ impl Mutation {
                     )
                     .await
                     .unwrap();
+
+                let placeholders: Vec<String> = (1..=position_ids.len())
+                    .map(|i| format!("${}", i))
+                    .collect();
+                let query = format!(
+                    "SELECT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
+                    WHERE p.id IN ({}) AND notification_token IS NOT NULL",
+                    placeholders.join(", ")
+                );
+
+                let tokens: Vec<String> = client
+                    .query(
+                        &query,
+                        &position_ids
+                            .iter()
+                            .map(|id| id as &(dyn tokio_postgres::types::ToSql + Sync))
+                            .collect::<Vec<&(dyn tokio_postgres::types::ToSql + Sync)>>(),
+                    )
+                    .await
+                    .unwrap()
+                    .iter()
+                    .map(|row| format!("ExponentPushToken[{}]", row.get::<usize, String>(0)))
+                    .collect();
+
+                expo::send(
+                    tokens,
+                    "New Alert!".to_string(),
+                    "Keep an eye open".to_string(),
+                )
+                .await
+                .unwrap();
 
                 Ok(alert)
             }

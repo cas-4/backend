@@ -1,6 +1,7 @@
 mod config;
 mod db;
 mod errors;
+mod expo;
 mod graphql;
 mod logger;
 mod routes;
@@ -27,6 +28,7 @@ use tracing::Span;
 /// Create the app: setup everything and returns a `Router`
 async fn create_app() -> Router {
     logger::setup();
+    expo::setup(CONFIG.expo_access_token.clone());
     let dbclient = db::setup().await.unwrap();
 
     let state = state::AppState {

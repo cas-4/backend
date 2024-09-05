@@ -16,6 +16,9 @@ pub struct Configuration {
 
     /// Host URL
     pub allowed_host: String,
+
+    /// Token used by Expo API to send a notification
+    pub expo_access_token: String,
 }
 
 impl Configuration {
