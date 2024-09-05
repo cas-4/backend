@@ -4,6 +4,7 @@ CREATE TABLE users(
     password text NOT NULL,
     name text NULL,
     address text NULL,
+    notification_token text NULL,
     is_admin boolean default false,
     PRIMARY KEY (id)
 );

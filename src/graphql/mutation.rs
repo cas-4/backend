@@ -3,7 +3,7 @@ use crate::{
         alert,
         jwt::{self, Authentication},
         position,
-        user::find_user,
+        user::{self, find_user},
     },
     state::AppState,
 };
@@ -55,6 +55,50 @@ impl Mutation {
             Ok(jwt::AuthBody::new(token, id[0]))
         } else {
             Err(Error::new("Invalid email or password"))
+        }
+    }
+
+    /// Make GraphQL call to register a notification device token for the user.
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -d '{
+    ///   "query": "mutation RegisterDevice($input: RegisterNotificationToken!) { registerDevice(input: $input) { id name email } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "token": "***",
+    ///     }
+    ///   }
+    /// }'
+    /// ```
+    async fn register_device<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        input: user::RegisterNotificationToken,
+    ) -> FieldResult<user::User> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
+
+        let auth: &Authentication = ctx.data().unwrap();
+        match auth {
+            Authentication::NotLogged => Err(Error::new("Can't find the owner")),
+            Authentication::Logged(claims) => {
+                let user = find_user(client, claims.user_id)
+                    .await
+                    .expect("Should not be here");
+
+                client
+                    .query(
+                        "UPDATE users SET notification_token = $1 WHERE id = $2",
+                        &[&input.token, &claims.user_id],
+                    )
+                    .await
+                    .unwrap();
+
+                Ok(user)
+            }
         }
     }
 

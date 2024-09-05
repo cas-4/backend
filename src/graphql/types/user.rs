@@ -1,5 +1,5 @@
 use crate::{errors::AppError, state::AppState};
-use async_graphql::{Context, Object};
+use async_graphql::{Context, InputObject, Object};
 use serde::{Deserialize, Serialize};
 use tokio_postgres::Client;
 
@@ -13,6 +13,7 @@ pub struct User {
     pub password: String,
     pub name: Option<String>,
     pub address: Option<String>,
+    pub notification_token: Option<String>,
     pub is_admin: bool,
 }
 
@@ -38,9 +39,18 @@ impl User {
         self.address.clone().unwrap_or(String::default())
     }
 
+    async fn notification_token(&self) -> String {
+        String::from("******")
+    }
+
     async fn is_admin(&self) -> bool {
         self.is_admin
     }
+}
+
+#[derive(InputObject, Debug)]
+pub struct RegisterNotificationToken {
+    pub token: String,
 }
 
 /// Get users from the database
@@ -68,7 +78,7 @@ pub async fn get_users<'ctx>(
 
             let rows = client
                 .query(
-                    "SELECT id, email, password, name, address, is_admin FROM users LIMIT $1 OFFSET $2",
+                    "SELECT id, email, name, address, is_admin FROM users LIMIT $1 OFFSET $2",
                     &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
                 )
                 .await
@@ -79,9 +89,10 @@ pub async fn get_users<'ctx>(
                 .map(|row| User {
                     id: row.get("id"),
                     email: row.get("email"),
-                    password: row.get("password"),
+                    password: String::new(),
                     name: row.get("name"),
                     address: row.get("address"),
+                    notification_token: None,
                     is_admin: row.get("is_admin"),
                 })
                 .collect();
@@ -107,7 +118,7 @@ pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, 
             if claim_user.is_admin {
                 rows = client
                     .query(
-                        "SELECT id, email, password, name, address, is_admin FROM users
+                        "SELECT id, email, name, address, is_admin FROM users
                             WHERE id = $1",
                         &[&id],
                     )
@@ -118,7 +129,7 @@ pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, 
             } else {
                 rows = client
                     .query(
-                        "SELECT id, email, password, name, address, is_admin FROM users
+                        "SELECT id, email, name, address, is_admin FROM users
                             WHERE id = $1",
                         &[&claims.user_id],
                     )
@@ -131,9 +142,10 @@ pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, 
                 .map(|row| User {
                     id: row.get("id"),
                     email: row.get("email"),
-                    password: row.get("password"),
+                    password: String::new(),
                     name: row.get("name"),
                     address: row.get("address"),
+                    notification_token: None,
                     is_admin: row.get("is_admin"),
                 })
                 .collect();
@@ -151,7 +163,7 @@ pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, 
 pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
     let rows = client
         .query(
-            "SELECT id, email, password, name, address, is_admin FROM users WHERE id = $1",
+            "SELECT id, email, name, address, is_admin FROM users WHERE id = $1",
             &[&id],
         )
         .await
@@ -162,9 +174,10 @@ pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
         .map(|row| User {
             id: row.get("id"),
             email: row.get("email"),
-            password: row.get("password"),
+            password: String::new(),
             name: row.get("name"),
             address: row.get("address"),
+            notification_token: None,
             is_admin: row.get("is_admin"),
         })
         .collect();
