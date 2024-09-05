@@ -621,7 +621,7 @@
 
                 <span class="kw">let </span><span class="kw-2">mut </span>notification_ids = <span class="macro">vec!</span>[];
                 <span class="kw">for </span>id <span class="kw">in </span><span class="kw-2">&amp;</span>position_ids {
-                    <span class="kw">let </span>notification = notification::Notification::new(client, alert.id, <span class="kw-2">*</span>id)
+                    <span class="kw">let </span>notification = notification::Notification::insert_db(client, alert.id, <span class="kw-2">*</span>id)
                         .<span class="kw">await
                         </span>.unwrap();
                     notification_ids.push(notification);

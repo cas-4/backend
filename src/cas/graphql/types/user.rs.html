@@ -222,11 +222,11 @@
     }
 
     <span class="kw">async fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="self">self</span>.name.clone().unwrap_or(String::default())
+        <span class="self">self</span>.name.clone().unwrap_or_default()
     }
 
     <span class="kw">async fn </span>address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="self">self</span>.address.clone().unwrap_or(String::default())
+        <span class="self">self</span>.address.clone().unwrap_or_default()
     }
 
     <span class="kw">async fn </span>notification_token(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
@@ -340,7 +340,7 @@
                 })
                 .collect();
 
-            <span class="kw">if </span>users.len() == <span class="number">0 </span>{
+            <span class="kw">if </span>users.is_empty() {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Not found"</span>.to_string());
             }
 
