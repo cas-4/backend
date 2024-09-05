@@ -405,7 +405,7 @@ dependencies = [
 
 [[package]]
 name = "cas"
-version = "0.0.3"
+version = "0.0.3-alpha.1"
 dependencies = [
  "async-graphql",
  "async-graphql-axum",
