@@ -175,8 +175,21 @@
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{errors::AppError, state::AppState};
-<span class="kw">use </span>async_graphql::{Context, Object};
+<span class="kw">use </span>async_graphql::{Context, InputObject, Object};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>tokio_postgres::Client;
 
@@ -190,6 +203,7 @@
     <span class="kw">pub </span>password: String,
     <span class="kw">pub </span>name: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>address: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>notification_token: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>is_admin: bool,
 }
 
@@ -215,9 +229,18 @@
         <span class="self">self</span>.address.clone().unwrap_or(String::default())
     }
 
+    <span class="kw">async fn </span>notification_token(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        String::from(<span class="string">"******"</span>)
+    }
+
     <span class="kw">async fn </span>is_admin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.is_admin
     }
+}
+
+<span class="attr">#[derive(InputObject, Debug)]
+</span><span class="kw">pub struct </span>RegisterNotificationToken {
+    <span class="kw">pub </span>token: String,
 }
 
 <span class="doccomment">/// Get users from the database
@@ -245,7 +268,7 @@
 
             <span class="kw">let </span>rows = client
                 .query(
-                    <span class="string">"SELECT id, email, password, name, address, is_admin FROM users LIMIT $1 OFFSET $2"</span>,
+                    <span class="string">"SELECT id, email, name, address, is_admin FROM users LIMIT $1 OFFSET $2"</span>,
                     <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)],
                 )
                 .<span class="kw">await
@@ -256,9 +279,10 @@
                 .map(|row| User {
                     id: row.get(<span class="string">"id"</span>),
                     email: row.get(<span class="string">"email"</span>),
-                    password: row.get(<span class="string">"password"</span>),
+                    password: String::new(),
                     name: row.get(<span class="string">"name"</span>),
                     address: row.get(<span class="string">"address"</span>),
+                    notification_token: <span class="prelude-val">None</span>,
                     is_admin: row.get(<span class="string">"is_admin"</span>),
                 })
                 .collect();
@@ -284,7 +308,7 @@
             <span class="kw">if </span>claim_user.is_admin {
                 rows = client
                     .query(
-                        <span class="string">"SELECT id, email, password, name, address, is_admin FROM users
+                        <span class="string">"SELECT id, email, name, address, is_admin FROM users
                             WHERE id = $1"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
                     )
@@ -295,7 +319,7 @@
             } <span class="kw">else </span>{
                 rows = client
                     .query(
-                        <span class="string">"SELECT id, email, password, name, address, is_admin FROM users
+                        <span class="string">"SELECT id, email, name, address, is_admin FROM users
                             WHERE id = $1"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claims.user_id],
                     )
@@ -308,9 +332,10 @@
                 .map(|row| User {
                     id: row.get(<span class="string">"id"</span>),
                     email: row.get(<span class="string">"email"</span>),
-                    password: row.get(<span class="string">"password"</span>),
+                    password: String::new(),
                     name: row.get(<span class="string">"name"</span>),
                     address: row.get(<span class="string">"address"</span>),
+                    notification_token: <span class="prelude-val">None</span>,
                     is_admin: row.get(<span class="string">"is_admin"</span>),
                 })
                 .collect();
@@ -328,7 +353,7 @@
 </span><span class="kw">pub async fn </span>find_user(client: <span class="kw-2">&amp;</span>Client, id: i32) -&gt; <span class="prelude-ty">Result</span>&lt;User, AppError&gt; {
     <span class="kw">let </span>rows = client
         .query(
-            <span class="string">"SELECT id, email, password, name, address, is_admin FROM users WHERE id = $1"</span>,
+            <span class="string">"SELECT id, email, name, address, is_admin FROM users WHERE id = $1"</span>,
             <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
         )
         .<span class="kw">await
@@ -339,9 +364,10 @@
         .map(|row| User {
             id: row.get(<span class="string">"id"</span>),
             email: row.get(<span class="string">"email"</span>),
-            password: row.get(<span class="string">"password"</span>),
+            password: String::new(),
             name: row.get(<span class="string">"name"</span>),
             address: row.get(<span class="string">"address"</span>),
+            notification_token: <span class="prelude-val">None</span>,
             is_admin: row.get(<span class="string">"is_admin"</span>),
         })
         .collect();

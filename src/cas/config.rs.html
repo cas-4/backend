@@ -30,6 +30,9 @@
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
 <a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>config::ConfigError;
 <span class="kw">use </span>lazy_static::lazy_static;
 <span class="kw">use </span>serde::Deserialize;
@@ -48,6 +51,9 @@
 
     <span class="doccomment">/// Host URL
     </span><span class="kw">pub </span>allowed_host: String,
+
+    <span class="doccomment">/// Token used by Expo API to send a notification
+    </span><span class="kw">pub </span>expo_access_token: String,
 }
 
 <span class="kw">impl </span>Configuration {
