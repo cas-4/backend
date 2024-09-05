@@ -111,7 +111,7 @@ where
                             }
                             _ => {
                                 eprintln!("{err:?}");
-                                return AppError::Unauthorized;
+                                AppError::Unauthorized
                             }
                         })?;
 

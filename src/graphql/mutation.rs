@@ -284,7 +284,7 @@ impl Mutation {
 
                 let mut notification_ids = vec![];
                 for id in &position_ids {
-                    let notification = notification::Notification::new(client, alert.id, *id)
+                    let notification = notification::Notification::insert_db(client, alert.id, *id)
                         .await
                         .unwrap();
                     notification_ids.push(notification);

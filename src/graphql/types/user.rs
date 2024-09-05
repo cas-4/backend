@@ -32,11 +32,11 @@ impl User {
     }
 
     async fn name(&self) -> String {
-        self.name.clone().unwrap_or(String::default())
+        self.name.clone().unwrap_or_default()
     }
 
     async fn address(&self) -> String {
-        self.address.clone().unwrap_or(String::default())
+        self.address.clone().unwrap_or_default()
     }
 
     async fn notification_token(&self) -> String {
@@ -150,7 +150,7 @@ pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, 
                 })
                 .collect();
 
-            if users.len() == 0 {
+            if users.is_empty() {
                 return Err("Not found".to_string());
             }
 

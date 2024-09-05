@@ -20,7 +20,11 @@ pub struct Notification {
 impl Notification {
     /// Create a new notification into the database from an alert_id and a position_id.
     /// Returns the new ID.
-    pub async fn new(client: &Client, alert_id: i32, position_id: i32) -> Result<i32, AppError> {
+    pub async fn insert_db(
+        client: &Client,
+        alert_id: i32,
+        position_id: i32,
+    ) -> Result<i32, AppError> {
         match client
             .query(
                 "INSERT INTO notifications(alert_id, position_id)
