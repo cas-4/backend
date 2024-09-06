@@ -1,10 +1,10 @@
 # CAS4 backend API
 
+<img src="https://avatars.githubusercontent.com/u/175958109?s=100&v=4" alt="Logo" align="right"/>
+
 This repo refers to a GraphQL API written in Rust used for a project for the
 [Context Aware System](https://www.unibo.it/en/study/phd-professional-masters-specialisation-schools-and-other-programmes/course-unit-catalogue/course-unit/2023/479036)
 class at the [University of Bologna](https://unibo.it).
-
----
 
 ## Development
 
