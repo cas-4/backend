@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cas-config
+data:
+  RUST_LOG: ${RUST_LOG}
+  DATABASE_URL: "postgres://postgres:password@postgres-service:5432/gis"
+  ALLOWED_HOST: "0.0.0.0:8000"
