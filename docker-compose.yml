@@ -1,0 +1,37 @@
+version: "3"
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: postgis
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=gis
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema:/docker-entrypoint-initdb.d
+    networks:
+      - default
+
+  cas:
+    image: ghcr.io/cas-4/backend:latest
+    container_name: cas
+    networks:
+      - default
+
+    environment:
+      - RUST_LOG=${RUST_LOG}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_HOST=${ALLOWED_HOST}
+      - EXPO_ACCESS_TOKEN=${EXPO_ACCESS_TOKEN}
+
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+volumes:
+  pgdata:
