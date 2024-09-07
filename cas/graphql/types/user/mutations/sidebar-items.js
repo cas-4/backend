@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["register_device"]};
+window.SIDEBAR_ITEMS = {"fn":["register_device","user_edit","user_password_edit"]};

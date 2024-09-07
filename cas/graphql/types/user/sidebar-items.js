@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["find_user"],"mod":["mutations","query"],"struct":["RegisterNotificationToken","User"]};
+window.SIDEBAR_ITEMS = {"fn":["find_user"],"mod":["mutations","query"],"struct":["RegisterNotificationToken","User","UserEdit","UserPasswordEdit"]};
