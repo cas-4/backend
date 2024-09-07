@@ -41,6 +41,7 @@ impl Mutation {
     /// ```text
     /// curl -X POST http://localhost:8000/graphql \
     /// -H "Content-Type: application/json" \
+    /// -H "Authorization: Bearer ***" \
     /// -d '{
     ///   "query": "mutation RegisterDevice($input: RegisterNotificationToken!) { registerDevice(input: $input) { id name email } }",
     ///   "variables": {
@@ -56,6 +57,60 @@ impl Mutation {
         input: user::RegisterNotificationToken,
     ) -> FieldResult<user::User> {
         user::mutations::register_device(ctx, input).await
+    }
+
+    /// Make GraphQL call to edit their passowrd.
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -H "Authorization: Bearer ***" \
+    /// -d '{
+    ///   "query": "mutation UserPasswordEdit($input: UserPasswordEdit!) { userPasswordEdit(input: $input) { id email name address is_admin } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "password1": "***",
+    ///       "password2": "***"
+    ///     }
+    ///   }
+    /// }'
+    /// ```
+    async fn user_password_edit<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        input: user::UserPasswordEdit,
+    ) -> FieldResult<user::User> {
+        user::mutations::user_password_edit(ctx, input).await
+    }
+
+    /// Make GraphQL call to edit an user. Not admins can edit only the user linked to the access
+    /// token used.
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -H "Authorization: Bearer ***" \
+    /// -d '{
+    ///   "query": "mutation UserEdit($input: UserEdit!, $id: Int!) { userEdit(input: $input, id: $id) { id email name address is_admin } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "email": "mario.rossi@example.com",
+    ///       "name": "Mario Rossi",
+    ///       "address": ""
+    ///     },
+    ///     "id": 42
+    ///   }
+    /// }'
+    /// ```
+    async fn user_edit<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        input: user::UserEdit,
+        id: i32,
+    ) -> FieldResult<user::User> {
+        user::mutations::user_edit(ctx, input, id).await
     }
 
     /// Make GraphQL request to create new position to track

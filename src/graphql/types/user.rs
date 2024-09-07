@@ -53,6 +53,19 @@ pub struct RegisterNotificationToken {
     pub token: String,
 }
 
+#[derive(InputObject, Debug)]
+pub struct UserEdit {
+    pub email: String,
+    pub name: Option<String>,
+    pub address: Option<String>,
+}
+
+#[derive(InputObject, Debug)]
+pub struct UserPasswordEdit {
+    pub password1: String,
+    pub password2: String,
+}
+
 /// Find an user with id = `id` using the PostgreSQL `client`
 pub async fn find_user(client: &Client, id: i32) -> Result<User, AppError> {
     let rows = client
@@ -216,6 +229,86 @@ pub mod mutations {
                     .query(
                         "UPDATE users SET notification_token = $1 WHERE id = $2",
                         &[&input.token, &claims.user_id],
+                    )
+                    .await
+                    .unwrap();
+
+                Ok(user)
+            }
+        }
+    }
+
+    /// Edit user info
+    pub async fn user_edit<'ctx>(
+        ctx: &Context<'ctx>,
+        input: UserEdit,
+        id: i32,
+    ) -> FieldResult<User> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
+
+        let auth: &Authentication = ctx.data().unwrap();
+        match auth {
+            Authentication::NotLogged => Err(Error::new("Can't find the owner")),
+            Authentication::Logged(claims) => {
+                let user = find_user(client, claims.user_id)
+                    .await
+                    .expect("should not be here");
+
+                if find_user(client, id).await.is_err() {
+                    return Err(Error::new("User not found"));
+                }
+
+                if !(user.is_admin || user.id == id) {
+                    return Err(Error::new("Not found"));
+                }
+
+                client
+                    .query(
+                        "UPDATE users SET email = $1, name = $2, address = $3 WHERE id = $4",
+                        &[&input.email, &input.name, &input.address, &id],
+                    )
+                    .await
+                    .unwrap();
+
+                let user = find_user(client, claims.user_id)
+                    .await
+                    .expect("Should not be here");
+
+                Ok(user)
+            }
+        }
+    }
+
+    /// Edit user password
+    pub async fn user_password_edit<'ctx>(
+        ctx: &Context<'ctx>,
+        input: UserPasswordEdit,
+    ) -> FieldResult<User> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
+
+        let auth: &Authentication = ctx.data().unwrap();
+        match auth {
+            Authentication::NotLogged => Err(Error::new("Can't find the owner")),
+            Authentication::Logged(claims) => {
+                let user = find_user(client, claims.user_id)
+                    .await
+                    .expect("should not be here");
+
+                if input.password1 != input.password2 {
+                    return Err(Error::new("`password1` and `password2` must be equals"));
+                }
+
+                if input.password1.len() < 8 {
+                    return Err(Error::new("`password1` length must be >= 8"));
+                }
+
+                let password = sha256::digest(input.password1);
+                client
+                    .query(
+                        "UPDATE users SET password = $1 WHERE id = $2",
+                        &[&password, &user.id],
                     )
                     .await
                     .unwrap();
