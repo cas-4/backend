@@ -1,5 +1,5 @@
 use crate::{graphql::types::jwt::Authentication, state::AppState};
-use async_graphql::{Context, Enum,FieldResult, InputObject, SimpleObject};
+use async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};

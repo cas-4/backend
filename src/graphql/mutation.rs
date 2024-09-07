@@ -4,7 +4,7 @@ use crate::graphql::types::{
     position,
     user::{self},
 };
-use async_graphql::{Context,FieldResult, Object};
+use async_graphql::{Context, FieldResult, Object};
 
 /// Mutation struct
 pub struct Mutation;
