@@ -166,6 +166,10 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
@@ -212,36 +216,39 @@
     }
 }
 
-<span class="doccomment">/// Get notifications from the database
-</span><span class="kw">pub async fn </span>get_notifications&lt;<span class="lifetime">'ctx</span>&gt;(
-    ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
+<span class="kw">pub mod </span>query {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="comment">// Filter for `seen` field
-    </span>seen: bool,
+    <span class="doccomment">/// Get notifications from the database
+    </span><span class="kw">pub async fn </span>get_notifications&lt;<span class="lifetime">'ctx</span>&gt;(
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
 
-    <span class="comment">// Optional filter by alert id
-    </span>alert_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
+        <span class="comment">// Filter for `seen` field
+        </span>seen: bool,
 
-    <span class="comment">// Optional limit results
-    </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+        <span class="comment">// Optional filter by alert id
+        </span>alert_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
 
-    <span class="comment">// Optional offset results. It should be used with limit field.
-    </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Notification&gt;&gt;, String&gt; {
-    <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
-    <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-    <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
-    <span class="kw">match </span>auth {
-        Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
-        Authentication::Logged(claims) =&gt; {
-            <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
-                .<span class="kw">await
-                </span>.expect(<span class="string">"Should not be here"</span>);
+        <span class="comment">// Optional limit results
+        </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
 
-            <span class="kw">let </span>limit = limit.unwrap_or(<span class="number">20</span>);
-            <span class="kw">let </span>offset = offset.unwrap_or(<span class="number">0</span>);
+        <span class="comment">// Optional offset results. It should be used with limit field.
+        </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Notification&gt;&gt;, String&gt; {
+        <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
+        <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">match </span>auth {
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::Logged(claims) =&gt; {
+                <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
+                    .<span class="kw">await
+                    </span>.expect(<span class="string">"Should not be here"</span>);
 
-            <span class="kw">let </span>base_query = <span class="string">"SELECT n.id,
+                <span class="kw">let </span>limit = limit.unwrap_or(<span class="number">20</span>);
+                <span class="kw">let </span>offset = offset.unwrap_or(<span class="number">0</span>);
+
+                <span class="kw">let </span>base_query = <span class="string">"SELECT n.id,
                                 n.alert_id,
                                 n.position_id,
                                 n.seen,
@@ -273,7 +280,7 @@
                         JOIN alerts a ON n.alert_id = a.id
                         JOIN positions p ON n.position_id = p.id"</span>.to_string();
 
-            <span class="kw">let </span>rows = <span class="kw">match </span>alert_id {
+                <span class="kw">let </span>rows = <span class="kw">match </span>alert_id {
                 <span class="prelude-val">Some</span>(id) <span class="kw">if </span>claim_user.is_admin =&gt;
                         client
                         .query(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -304,33 +311,34 @@
                     </span>.unwrap(),
             };
 
-            <span class="kw">let </span>notifications: Vec&lt;Notification&gt; = rows
-                .iter()
-                .map(|row| Notification {
-                    id: row.get(<span class="string">"id"</span>),
-                    alert: Alert {
-                        id: row.get(<span class="string">"alert_id"</span>),
-                        user_id: row.get(<span class="string">"alert_user_id"</span>),
-                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"alert_created_at"</span>) <span class="kw">as </span>i64,
-                        area: row.get(<span class="string">"alert_area"</span>),
-                        extended_area: row.get(<span class="string">"alert_extended_area"</span>),
-                        level: row.get(<span class="string">"alert_level"</span>),
-                        reached_users: row.get(<span class="string">"alert_reached_users"</span>),
-                    },
-                    position: Position {
-                        id: row.get(<span class="string">"position_id"</span>),
-                        user_id: row.get(<span class="string">"position_user_id"</span>),
-                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"position_created_at"</span>) <span class="kw">as </span>i64,
-                        latitude: row.get(<span class="string">"position_latitude"</span>),
-                        longitude: row.get(<span class="string">"position_longitude"</span>),
-                        moving_activity: row.get(<span class="string">"position_activity"</span>),
-                    },
-                    seen: row.get(<span class="string">"seen"</span>),
-                    created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                })
-                .collect();
+                <span class="kw">let </span>notifications: Vec&lt;Notification&gt; = rows
+                    .iter()
+                    .map(|row| Notification {
+                        id: row.get(<span class="string">"id"</span>),
+                        alert: Alert {
+                            id: row.get(<span class="string">"alert_id"</span>),
+                            user_id: row.get(<span class="string">"alert_user_id"</span>),
+                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"alert_created_at"</span>) <span class="kw">as </span>i64,
+                            area: row.get(<span class="string">"alert_area"</span>),
+                            extended_area: row.get(<span class="string">"alert_extended_area"</span>),
+                            level: row.get(<span class="string">"alert_level"</span>),
+                            reached_users: row.get(<span class="string">"alert_reached_users"</span>),
+                        },
+                        position: Position {
+                            id: row.get(<span class="string">"position_id"</span>),
+                            user_id: row.get(<span class="string">"position_user_id"</span>),
+                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"position_created_at"</span>) <span class="kw">as </span>i64,
+                            latitude: row.get(<span class="string">"position_latitude"</span>),
+                            longitude: row.get(<span class="string">"position_longitude"</span>),
+                            moving_activity: row.get(<span class="string">"position_activity"</span>),
+                        },
+                        seen: row.get(<span class="string">"seen"</span>),
+                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                    })
+                    .collect();
 
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(notifications))
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(notifications))
+            }
         }
     }
 }

@@ -154,7 +154,7 @@
         <span class="attr">#[graphql(desc = <span class="string">"Limit results"</span>)] </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;user::User&gt;&gt;, String&gt; {
-        user::get_users(ctx, limit, offset).<span class="kw">await
+        user::query::get_users(ctx, limit, offset).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Returns an user by ID. Admins can check everyone.
@@ -171,7 +171,7 @@
         ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"User to find"</span>)] </span>id: i32,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;user::User, String&gt; {
-        user::get_user_by_id(ctx, id).<span class="kw">await
+        user::query::get_user_by_id(ctx, id).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Returns all the positions
@@ -190,7 +190,7 @@
         <span class="attr">#[graphql(desc = <span class="string">"Limit results"</span>)] </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;position::Position&gt;&gt;, String&gt; {
-        position::get_positions(ctx, user_id, limit, offset).<span class="kw">await
+        position::query::get_positions(ctx, user_id, limit, offset).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Returns all the last positions for each user.
@@ -210,7 +210,7 @@
             position::MovingActivity,
         &gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;position::Position&gt;&gt;, String&gt; {
-        position::last_positions(ctx, moving_activity).<span class="kw">await
+        position::query::last_positions(ctx, moving_activity).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Returns all the positions
@@ -229,7 +229,7 @@
         <span class="attr">#[graphql(desc = <span class="string">"Limit results"</span>)] </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;alert::Alert&gt;&gt;, String&gt; {
-        alert::get_alerts(ctx, id, limit, offset).<span class="kw">await
+        alert::query::get_alerts(ctx, id, limit, offset).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Returns all the notifications. They can be filtered by an alert id.
@@ -251,7 +251,7 @@
         <span class="attr">#[graphql(desc = <span class="string">"Limit results"</span>)] </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;notification::Notification&gt;&gt;, String&gt; {
-        notification::get_notifications(ctx, seen, alert_id, limit, offset).<span class="kw">await
+        notification::query::get_notifications(ctx, seen, alert_id, limit, offset).<span class="kw">await
     </span>}
 }
 </code></pre></div></section></main></body></html>

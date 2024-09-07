@@ -222,8 +222,65 @@
 <a href="#222" id="222">222</a>
 <a href="#223" id="223">223</a>
 <a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{graphql::types::jwt::Authentication, state::AppState};
-<span class="kw">use </span>async_graphql::{Context, Enum, InputObject, SimpleObject};
+<span class="kw">use </span>async_graphql::{Context, Enum,FieldResult, InputObject, SimpleObject};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
@@ -309,35 +366,38 @@
     <span class="kw">pub </span>moving_activity: MovingActivity,
 }
 
-<span class="doccomment">/// Get positions from the database
-</span><span class="kw">pub async fn </span>get_positions&lt;<span class="lifetime">'ctx</span>&gt;(
-    ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
+<span class="kw">pub mod </span>query {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="comment">// Optional filter by user id. If not defined returns only available positions:
-    // If claimed user is admin returns everything, otherwise only positions linked to that user.
-    </span>user_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
+    <span class="doccomment">/// Get positions from the database
+    </span><span class="kw">pub async fn </span>get_positions&lt;<span class="lifetime">'ctx</span>&gt;(
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
 
-    <span class="comment">// Optional limit results
-    </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+        <span class="comment">// Optional filter by user id. If not defined returns only available positions:
+        // If claimed user is admin returns everything, otherwise only positions linked to that user.
+        </span>user_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
 
-    <span class="comment">// Optional offset results. It should be used with limit field.
-    </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, String&gt; {
-    <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
-    <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-    <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
-    <span class="kw">match </span>auth {
-        Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
-        Authentication::Logged(claims) =&gt; {
-            <span class="kw">let </span>rows;
-            <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
-                .<span class="kw">await
-                </span>.expect(<span class="string">"Should not be here"</span>);
+        <span class="comment">// Optional limit results
+        </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
 
-            <span class="kw">if </span>claim_user.is_admin {
-                <span class="kw">match </span>user_id {
-                    <span class="prelude-val">Some</span>(id) =&gt; {
-                        rows = client.query(<span class="string">"
+        <span class="comment">// Optional offset results. It should be used with limit field.
+        </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, String&gt; {
+        <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
+        <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">match </span>auth {
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::Logged(claims) =&gt; {
+                <span class="kw">let </span>rows;
+                <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
+                    .<span class="kw">await
+                    </span>.expect(<span class="string">"Should not be here"</span>);
+
+                <span class="kw">if </span>claim_user.is_admin {
+                    <span class="kw">match </span>user_id {
+                        <span class="prelude-val">Some</span>(id) =&gt; {
+                            rows = client.query(<span class="string">"
                             SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions
                             WHERE user_id = $1
@@ -345,19 +405,19 @@
                             LIMIT $2
                             OFFSET $3"</span>,
                             <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)]).<span class="kw">await</span>.unwrap();
-                    }
-                    <span class="prelude-val">None </span>=&gt; {
-                        rows = client.query(<span class="string">"
+                        }
+                        <span class="prelude-val">None </span>=&gt; {
+                            rows = client.query(<span class="string">"
                             SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions
                             ORDER BY id DESC
                             LIMIT $1
                             OFFSET $2"</span>,
                             <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)]).<span class="kw">await</span>.unwrap();
+                        }
                     }
-                }
-            } <span class="kw">else </span>{
-                rows = client.query(<span class="string">"
+                } <span class="kw">else </span>{
+                    rows = client.query(<span class="string">"
                     SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                     FROM positions
                     WHERE user_id = $1
@@ -365,50 +425,50 @@
                     LIMIT $2
                     OFFSET $3"</span>,
                     <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)]).<span class="kw">await</span>.unwrap();
+                }
+
+                <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
+                    .iter()
+                    .map(|row| Position {
+                        id: row.get(<span class="string">"id"</span>),
+                        user_id: row.get(<span class="string">"user_id"</span>),
+                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                        latitude: row.get(<span class="string">"latitude"</span>),
+                        longitude: row.get(<span class="string">"longitude"</span>),
+                        moving_activity: row.get(<span class="string">"activity"</span>),
+                    })
+                    .collect();
+
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(positions))
             }
-
-            <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
-                .iter()
-                .map(|row| Position {
-                    id: row.get(<span class="string">"id"</span>),
-                    user_id: row.get(<span class="string">"user_id"</span>),
-                    created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                    latitude: row.get(<span class="string">"latitude"</span>),
-                    longitude: row.get(<span class="string">"longitude"</span>),
-                    moving_activity: row.get(<span class="string">"activity"</span>),
-                })
-                .collect();
-
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(positions))
         }
     }
-}
 
-<span class="doccomment">/// Get last positions from the database for each user.
-/// It is restricted to only admin users.
-</span><span class="kw">pub async fn </span>last_positions&lt;<span class="lifetime">'ctx</span>&gt;(
-    ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
+    <span class="doccomment">/// Get last positions from the database for each user.
+    /// It is restricted to only admin users.
+    </span><span class="kw">pub async fn </span>last_positions&lt;<span class="lifetime">'ctx</span>&gt;(
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
 
-    <span class="comment">// Optional filter by moving activity
-    </span>moving_activity: <span class="prelude-ty">Option</span>&lt;MovingActivity&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, String&gt; {
-    <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
-    <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-    <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
-    <span class="kw">match </span>auth {
-        Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
-        Authentication::Logged(claims) =&gt; {
-            <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
-                .<span class="kw">await
-                </span>.expect(<span class="string">"Should not be here"</span>);
+        <span class="comment">// Optional filter by moving activity
+        </span>moving_activity: <span class="prelude-ty">Option</span>&lt;MovingActivity&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, String&gt; {
+        <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
+        <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">match </span>auth {
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::Logged(claims) =&gt; {
+                <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
+                    .<span class="kw">await
+                    </span>.expect(<span class="string">"Should not be here"</span>);
 
-            <span class="kw">if </span>!claim_user.is_admin {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string());
-            }
+                <span class="kw">if </span>!claim_user.is_admin {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string());
+                }
 
-            <span class="kw">let </span>rows = client
+                <span class="kw">let </span>rows = client
                         .query(
-                            <span class="string">"SELECT DISTINCT ON (user_id) 
+                            <span class="string">"SELECT DISTINCT ON (user_id)
                                 id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions ORDER BY user_id, created_at DESC"</span>,
                             <span class="kw-2">&amp;</span>[],
@@ -416,33 +476,87 @@
                         .<span class="kw">await
                         </span>.unwrap();
 
-            <span class="kw">let </span>positions: Vec&lt;Position&gt; = <span class="kw">match </span>moving_activity {
-                <span class="prelude-val">Some</span>(activity) =&gt; rows
-                    .iter()
-                    .map(|row| Position {
-                        id: row.get(<span class="string">"id"</span>),
-                        user_id: row.get(<span class="string">"user_id"</span>),
-                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                        latitude: row.get(<span class="string">"latitude"</span>),
-                        longitude: row.get(<span class="string">"longitude"</span>),
-                        moving_activity: row.get(<span class="string">"activity"</span>),
-                    })
-                    .filter(|x| x.moving_activity == activity)
-                    .collect(),
-                <span class="prelude-val">None </span>=&gt; rows
-                    .iter()
-                    .map(|row| Position {
-                        id: row.get(<span class="string">"id"</span>),
-                        user_id: row.get(<span class="string">"user_id"</span>),
-                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                        latitude: row.get(<span class="string">"latitude"</span>),
-                        longitude: row.get(<span class="string">"longitude"</span>),
-                        moving_activity: row.get(<span class="string">"activity"</span>),
-                    })
-                    .collect(),
-            };
+                <span class="kw">let </span>positions: Vec&lt;Position&gt; = <span class="kw">match </span>moving_activity {
+                    <span class="prelude-val">Some</span>(activity) =&gt; rows
+                        .iter()
+                        .map(|row| Position {
+                            id: row.get(<span class="string">"id"</span>),
+                            user_id: row.get(<span class="string">"user_id"</span>),
+                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                            latitude: row.get(<span class="string">"latitude"</span>),
+                            longitude: row.get(<span class="string">"longitude"</span>),
+                            moving_activity: row.get(<span class="string">"activity"</span>),
+                        })
+                        .filter(|x| x.moving_activity == activity)
+                        .collect(),
+                    <span class="prelude-val">None </span>=&gt; rows
+                        .iter()
+                        .map(|row| Position {
+                            id: row.get(<span class="string">"id"</span>),
+                            user_id: row.get(<span class="string">"user_id"</span>),
+                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                            latitude: row.get(<span class="string">"latitude"</span>),
+                            longitude: row.get(<span class="string">"longitude"</span>),
+                            moving_activity: row.get(<span class="string">"activity"</span>),
+                        })
+                        .collect(),
+                };
 
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(positions))
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(positions))
+            }
+        }
+    }
+}
+
+<span class="kw">pub mod </span>mutations {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="doccomment">/// Create a new position for a logged user
+    </span><span class="kw">pub async fn </span>new_position&lt;<span class="lifetime">'ctx</span>&gt;(
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
+        input: PositionInput,
+    ) -&gt; FieldResult&lt;Position&gt; {
+        <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
+        <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
+
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">match </span>auth {
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Can't find the owner"</span>)),
+            Authentication::Logged(claims) =&gt; {
+                <span class="kw">let </span>rows = client
+                    .query(
+                        <span class="string">"INSERT INTO positions (user_id, location, activity)
+                        VALUES (
+                            $1,
+                            ST_SetSRID(ST_MakePoint($2, $3), 4326),
+                            $4
+                        )
+                        RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                        "</span>,
+                        <span class="kw-2">&amp;</span>[
+                            <span class="kw-2">&amp;</span>claims.user_id,
+                            <span class="kw-2">&amp;</span>input.longitude,
+                            <span class="kw-2">&amp;</span>input.latitude,
+                            <span class="kw-2">&amp;</span>input.moving_activity,
+                        ],
+                    )
+                    .<span class="kw">await
+                    </span>.unwrap();
+
+                <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
+                    .iter()
+                    .map(|row| Position {
+                        id: row.get(<span class="string">"id"</span>),
+                        user_id: row.get(<span class="string">"user_id"</span>),
+                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                        latitude: row.get(<span class="string">"latitude"</span>),
+                        longitude: row.get(<span class="string">"longitude"</span>),
+                        moving_activity: row.get(<span class="string">"activity"</span>),
+                    })
+                    .collect();
+
+                <span class="prelude-val">Ok</span>(positions[<span class="number">0</span>].clone())
+            }
         }
     }
 }

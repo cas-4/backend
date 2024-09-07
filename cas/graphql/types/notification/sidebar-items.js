@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get_notifications"],"struct":["Notification"]};
+window.SIDEBAR_ITEMS = {"mod":["query"],"struct":["Notification"]};

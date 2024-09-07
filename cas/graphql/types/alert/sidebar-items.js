@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["LevelAlert"],"fn":["get_alerts"],"struct":["Alert","AlertInput","Point","PolygonValid"]};
+window.SIDEBAR_ITEMS = {"enum":["LevelAlert"],"mod":["mutations","query"],"struct":["Alert","AlertInput","Point","PolygonValid"]};

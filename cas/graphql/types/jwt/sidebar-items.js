@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Authentication"],"static":["KEYS"],"struct":["AuthBody","Claims","Keys","LoginCredentials"]};
+window.SIDEBAR_ITEMS = {"enum":["Authentication"],"mod":["mutations"],"static":["KEYS"],"struct":["AuthBody","Claims","Keys","LoginCredentials"]};
