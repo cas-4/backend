@@ -26,7 +26,7 @@ impl Query {
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<user::User>>, String> {
-        user::get_users(ctx, limit, offset).await
+        user::query::get_users(ctx, limit, offset).await
     }
 
     /// Returns an user by ID. Admins can check everyone.
@@ -43,7 +43,7 @@ impl Query {
         ctx: &Context<'ctx>,
         #[graphql(desc = "User to find")] id: i32,
     ) -> Result<user::User, String> {
-        user::get_user_by_id(ctx, id).await
+        user::query::get_user_by_id(ctx, id).await
     }
 
     /// Returns all the positions
@@ -62,7 +62,7 @@ impl Query {
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<position::Position>>, String> {
-        position::get_positions(ctx, user_id, limit, offset).await
+        position::query::get_positions(ctx, user_id, limit, offset).await
     }
 
     /// Returns all the last positions for each user.
@@ -82,7 +82,7 @@ impl Query {
             position::MovingActivity,
         >,
     ) -> Result<Option<Vec<position::Position>>, String> {
-        position::last_positions(ctx, moving_activity).await
+        position::query::last_positions(ctx, moving_activity).await
     }
 
     /// Returns all the positions
@@ -101,7 +101,7 @@ impl Query {
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<alert::Alert>>, String> {
-        alert::get_alerts(ctx, id, limit, offset).await
+        alert::query::get_alerts(ctx, id, limit, offset).await
     }
 
     /// Returns all the notifications. They can be filtered by an alert id.
@@ -123,6 +123,6 @@ impl Query {
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<notification::Notification>>, String> {
-        notification::get_notifications(ctx, seen, alert_id, limit, offset).await
+        notification::query::get_notifications(ctx, seen, alert_id, limit, offset).await
     }
 }

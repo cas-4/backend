@@ -44,36 +44,39 @@ impl Notification {
     }
 }
 
-/// Get notifications from the database
-pub async fn get_notifications<'ctx>(
-    ctx: &Context<'ctx>,
+pub mod query {
+    use super::*;
 
-    // Filter for `seen` field
-    seen: bool,
+    /// Get notifications from the database
+    pub async fn get_notifications<'ctx>(
+        ctx: &Context<'ctx>,
 
-    // Optional filter by alert id
-    alert_id: Option<i32>,
+        // Filter for `seen` field
+        seen: bool,
 
-    // Optional limit results
-    limit: Option<i64>,
+        // Optional filter by alert id
+        alert_id: Option<i32>,
 
-    // Optional offset results. It should be used with limit field.
-    offset: Option<i64>,
-) -> Result<Option<Vec<Notification>>, String> {
-    let state = ctx.data::<AppState>().expect("Can't connect to db");
-    let client = &*state.client;
-    let auth: &Authentication = ctx.data().unwrap();
-    match auth {
-        Authentication::NotLogged => Err("Unauthorized".to_string()),
-        Authentication::Logged(claims) => {
-            let claim_user = find_user(client, claims.user_id)
-                .await
-                .expect("Should not be here");
+        // Optional limit results
+        limit: Option<i64>,
 
-            let limit = limit.unwrap_or(20);
-            let offset = offset.unwrap_or(0);
+        // Optional offset results. It should be used with limit field.
+        offset: Option<i64>,
+    ) -> Result<Option<Vec<Notification>>, String> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
+        let auth: &Authentication = ctx.data().unwrap();
+        match auth {
+            Authentication::NotLogged => Err("Unauthorized".to_string()),
+            Authentication::Logged(claims) => {
+                let claim_user = find_user(client, claims.user_id)
+                    .await
+                    .expect("Should not be here");
 
-            let base_query = "SELECT n.id,
+                let limit = limit.unwrap_or(20);
+                let offset = offset.unwrap_or(0);
+
+                let base_query = "SELECT n.id,
                                 n.alert_id,
                                 n.position_id,
                                 n.seen,
@@ -105,7 +108,7 @@ pub async fn get_notifications<'ctx>(
                         JOIN alerts a ON n.alert_id = a.id
                         JOIN positions p ON n.position_id = p.id".to_string();
 
-            let rows = match alert_id {
+                let rows = match alert_id {
                 Some(id) if claim_user.is_admin =>
                         client
                         .query(&format!(
@@ -136,33 +139,34 @@ pub async fn get_notifications<'ctx>(
                     .unwrap(),
             };
 
-            let notifications: Vec<Notification> = rows
-                .iter()
-                .map(|row| Notification {
-                    id: row.get("id"),
-                    alert: Alert {
-                        id: row.get("alert_id"),
-                        user_id: row.get("alert_user_id"),
-                        created_at: row.get::<_, f64>("alert_created_at") as i64,
-                        area: row.get("alert_area"),
-                        extended_area: row.get("alert_extended_area"),
-                        level: row.get("alert_level"),
-                        reached_users: row.get("alert_reached_users"),
-                    },
-                    position: Position {
-                        id: row.get("position_id"),
-                        user_id: row.get("position_user_id"),
-                        created_at: row.get::<_, f64>("position_created_at") as i64,
-                        latitude: row.get("position_latitude"),
-                        longitude: row.get("position_longitude"),
-                        moving_activity: row.get("position_activity"),
-                    },
-                    seen: row.get("seen"),
-                    created_at: row.get::<_, f64>("created_at") as i64,
-                })
-                .collect();
+                let notifications: Vec<Notification> = rows
+                    .iter()
+                    .map(|row| Notification {
+                        id: row.get("id"),
+                        alert: Alert {
+                            id: row.get("alert_id"),
+                            user_id: row.get("alert_user_id"),
+                            created_at: row.get::<_, f64>("alert_created_at") as i64,
+                            area: row.get("alert_area"),
+                            extended_area: row.get("alert_extended_area"),
+                            level: row.get("alert_level"),
+                            reached_users: row.get("alert_reached_users"),
+                        },
+                        position: Position {
+                            id: row.get("position_id"),
+                            user_id: row.get("position_user_id"),
+                            created_at: row.get::<_, f64>("position_created_at") as i64,
+                            latitude: row.get("position_latitude"),
+                            longitude: row.get("position_longitude"),
+                            moving_activity: row.get("position_activity"),
+                        },
+                        seen: row.get("seen"),
+                        created_at: row.get::<_, f64>("created_at") as i64,
+                    })
+                    .collect();
 
-            Ok(Some(notifications))
+                Ok(Some(notifications))
+            }
         }
     }
 }

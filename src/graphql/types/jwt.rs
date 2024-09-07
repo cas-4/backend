@@ -1,5 +1,5 @@
-use crate::errors::AppError;
-use async_graphql::{InputObject, SimpleObject};
+use crate::{errors::AppError, state::AppState};
+use async_graphql::{Context, Error, FieldResult, InputObject, SimpleObject};
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -118,6 +118,38 @@ where
                 Ok(Self::Logged(token_data.claims))
             }
             Err(_) => Ok(Self::NotLogged),
+        }
+    }
+}
+
+pub mod mutations {
+    use super::*;
+
+    /// Login mutation
+    pub async fn login<'ctx>(
+        ctx: &Context<'ctx>,
+        input: LoginCredentials,
+    ) -> FieldResult<AuthBody> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
+
+        let password = sha256::digest(input.password);
+        let rows = client
+            .query(
+                "SELECT id FROM users WHERE email = $1 AND password = $2",
+                &[&input.email, &password],
+            )
+            .await
+            .unwrap();
+
+        let id: Vec<i32> = rows.iter().map(|row| row.get(0)).collect();
+        if id.len() == 1 {
+            // Create a new claim using the found ID
+            let claims = Claims::new(id[0]);
+            let token = claims.get_token().unwrap();
+            Ok(AuthBody::new(token, id[0]))
+        } else {
+            Err(Error::new("Invalid email or password"))
         }
     }
 }
