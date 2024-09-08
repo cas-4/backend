@@ -169,6 +169,32 @@
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graphql::types::{
     alert,
     jwt::{<span class="self">self</span>},
@@ -176,6 +202,8 @@
     user::{<span class="self">self</span>},
 };
 <span class="kw">use </span>async_graphql::{Context, FieldResult, Object};
+
+<span class="kw">use </span><span class="kw">super</span>::types::notification;
 
 <span class="doccomment">/// Mutation struct
 </span><span class="kw">pub struct </span>Mutation;
@@ -338,6 +366,30 @@
         input: alert::AlertInput,
     ) -&gt; FieldResult&lt;alert::Alert&gt; {
         alert::mutations::new_alert(ctx, input).<span class="kw">await
+    </span>}
+
+    <span class="doccomment">/// Make GraphQL request to update notification seen status.
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -H "Authorization: Bearer ****" \
+    /// -d '{
+    ///   "query": "mutation NotificationUpdate($input: NotificationUpdateInput!) { notificationUpdate(input: $input) { id seen } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "id": 42,
+    ///       "seen": true
+    ///     }
+    ///   }
+    /// }
+    </span><span class="kw">async fn </span>notification_update&lt;<span class="lifetime">'ctx</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
+        input: notification::NotificationUpdateInput,
+    ) -&gt; FieldResult&lt;notification::Notification&gt; {
+        notification::mutations::notification_update(ctx, input).<span class="kw">await
     </span>}
 }
 </code></pre></div></section></main></body></html>

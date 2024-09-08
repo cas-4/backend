@@ -126,6 +126,7 @@
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graphql::types::<span class="kw-2">*</span>;
 <span class="kw">use </span>async_graphql::{Context, Object};
 
@@ -246,12 +247,13 @@
     </span><span class="kw">async fn </span>notifications&lt;<span class="lifetime">'ctx</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
-        <span class="attr">#[graphql(desc = <span class="string">"Show only seen or not notifications"</span>)] </span>seen: bool,
+        <span class="attr">#[graphql(desc = <span class="string">"Show only seen or not notifications"</span>)] </span>seen: <span class="prelude-ty">Option</span>&lt;bool&gt;,
+        <span class="attr">#[graphql(desc = <span class="string">"Filter by ID"</span>)] </span>id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Filter by alert ID"</span>)] </span>alert_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Limit results"</span>)] </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;notification::Notification&gt;&gt;, String&gt; {
-        notification::query::get_notifications(ctx, seen, alert_id, limit, offset).<span class="kw">await
+        notification::query::get_notifications(ctx, seen, id, alert_id, limit, offset).<span class="kw">await
     </span>}
 }
 </code></pre></div></section></main></body></html>

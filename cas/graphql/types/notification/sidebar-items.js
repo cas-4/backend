@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["query"],"struct":["Notification"]};
+window.SIDEBAR_ITEMS = {"mod":["mutations","query"],"struct":["Notification","NotificationUpdateInput"]};
