@@ -3,7 +3,7 @@ use crate::{
     graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
     state::AppState,
 };
-use async_graphql::{Context, SimpleObject};
+use async_graphql::{Context, FieldResult, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
 use tokio_postgres::Client;
 
@@ -15,6 +15,13 @@ pub struct Notification {
     pub position: Position,
     pub seen: bool,
     pub created_at: i64,
+}
+
+#[derive(InputObject)]
+/// Alert input struct
+pub struct NotificationUpdateInput {
+    pub id: i32,
+    pub seen: bool,
 }
 
 impl Notification {
@@ -180,6 +187,106 @@ pub mod query {
                     .collect();
 
                 Ok(Some(notifications))
+            }
+        }
+    }
+}
+
+pub mod mutations {
+    use super::*;
+
+    pub async fn notification_update<'ctx>(
+        ctx: &Context<'ctx>,
+        input: NotificationUpdateInput,
+    ) -> FieldResult<Notification> {
+        let state = ctx.data::<AppState>().expect("Can't connect to db");
+        let client = &*state.client;
+
+        let auth: &Authentication = ctx.data().unwrap();
+        match auth {
+            Authentication::NotLogged => Err(async_graphql::Error::new("Can't find the owner")),
+            Authentication::Logged(claims) => {
+                let user = find_user(client, claims.user_id)
+                    .await
+                    .expect("Should not be here");
+
+                let notification = client.query("SELECT n.id,
+                                n.alert_id,
+                                n.position_id,
+                                n.seen,
+                                extract(epoch from n.created_at)::double precision as created_at,
+                                a.id as alert_id,
+                                a.user_id as alert_user_id,
+                                extract(epoch from a.created_at)::double precision as alert_created_at,
+                                ST_AsText(a.area) as alert_area,
+                                ST_AsText(
+                                    ST_Buffer(
+                                        a.area::geography,
+                                        CASE
+                                            WHEN level = 'One' THEN 0
+                                            WHEN level = 'Two' THEN 1000
+                                            WHEN level = 'Three' THEN 2000
+                                            ELSE 0
+                                        END
+                                    )
+                                ) as alert_extended_area,
+                                a.level as alert_level,
+                                a.reached_users as alert_reached_users,
+                                p.id as position_id,
+                                p.user_id as position_user_id,
+                                extract(epoch from p.created_at)::double precision as position_created_at,
+                                ST_Y(p.location::geometry) AS position_latitude,
+                                ST_X(p.location::geometry) AS position_longitude,
+                                p.activity as position_activity
+                        FROM notifications n
+                        JOIN alerts a ON n.alert_id = a.id
+                        JOIN positions p ON n.position_id = p.id
+                        WHERE n.id = $1
+                        ",
+                       &[&input.id])
+                    .await
+                    .unwrap()
+                    .iter()
+                    .map(|row| Notification {
+                        id: row.get("id"),
+                        alert: Alert {
+                            id: row.get("alert_id"),
+                            user_id: row.get("alert_user_id"),
+                            created_at: row.get::<_, f64>("alert_created_at") as i64,
+                            area: row.get("alert_area"),
+                            extended_area: row.get("alert_extended_area"),
+                            level: row.get("alert_level"),
+                            reached_users: row.get("alert_reached_users"),
+                        },
+                        position: Position {
+                            id: row.get("position_id"),
+                            user_id: row.get("position_user_id"),
+                            created_at: row.get::<_, f64>("position_created_at") as i64,
+                            latitude: row.get("position_latitude"),
+                            longitude: row.get("position_longitude"),
+                            moving_activity: row.get("position_activity"),
+                        },
+                        seen: row.get("seen"),
+                        created_at: row.get::<_, f64>("created_at") as i64,
+                    })
+                    .collect::<Vec<Notification>>()
+                    .first()
+                    .cloned()
+                    .ok_or_else(|| async_graphql::Error::new("Failed to get notification"))?;
+
+                if notification.position.user_id != user.id {
+                    return Err(async_graphql::Error::new("Not found"));
+                }
+
+                client
+                    .query(
+                        "UPDATE notifications SET seen = $1 WHERE id = $2",
+                        &[&input.seen, &input.id],
+                    )
+                    .await
+                    .unwrap();
+
+                Ok(notification)
             }
         }
     }

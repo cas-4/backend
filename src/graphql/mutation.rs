@@ -6,6 +6,8 @@ use crate::graphql::types::{
 };
 use async_graphql::{Context, FieldResult, Object};
 
+use super::types::notification;
+
 /// Mutation struct
 pub struct Mutation;
 
@@ -167,5 +169,29 @@ impl Mutation {
         input: alert::AlertInput,
     ) -> FieldResult<alert::Alert> {
         alert::mutations::new_alert(ctx, input).await
+    }
+
+    /// Make GraphQL request to update notification seen status.
+    ///
+    /// Example:
+    /// ```text
+    /// curl -X POST http://localhost:8000/graphql \
+    /// -H "Content-Type: application/json" \
+    /// -H "Authorization: Bearer ****" \
+    /// -d '{
+    ///   "query": "mutation NotificationUpdate($input: NotificationUpdateInput!) { notificationUpdate(input: $input) { id seen } }",
+    ///   "variables": {
+    ///     "input": {
+    ///       "id": 42,
+    ///       "seen": true
+    ///     }
+    ///   }
+    /// }
+    async fn notification_update<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        input: notification::NotificationUpdateInput,
+    ) -> FieldResult<notification::Notification> {
+        notification::mutations::notification_update(ctx, input).await
     }
 }
