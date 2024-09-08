@@ -118,11 +118,12 @@ impl Query {
     async fn notifications<'ctx>(
         &self,
         ctx: &Context<'ctx>,
-        #[graphql(desc = "Show only seen or not notifications")] seen: bool,
+        #[graphql(desc = "Show only seen or not notifications")] seen: Option<bool>,
+        #[graphql(desc = "Filter by ID")] id: Option<i32>,
         #[graphql(desc = "Filter by alert ID")] alert_id: Option<i32>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<notification::Notification>>, String> {
-        notification::query::get_notifications(ctx, seen, alert_id, limit, offset).await
+        notification::query::get_notifications(ctx, seen, id, alert_id, limit, offset).await
     }
 }

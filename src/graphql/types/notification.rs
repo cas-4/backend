@@ -52,7 +52,10 @@ pub mod query {
         ctx: &Context<'ctx>,
 
         // Filter for `seen` field
-        seen: bool,
+        seen: Option<bool>,
+
+        // Optional filter by id
+        id: Option<i32>,
 
         // Optional filter by alert id
         alert_id: Option<i32>,
@@ -108,32 +111,43 @@ pub mod query {
                         JOIN alerts a ON n.alert_id = a.id
                         JOIN positions p ON n.position_id = p.id".to_string();
 
+                let base_query = match id {
+                    Some(idn) => format!("{} WHERE n.id = {}", base_query, idn),
+                    None => format!("{} WHERE 1=1", base_query),
+                };
+
+                let base_query = match seen {
+                    Some(seen_status) if seen_status => format!("{} AND seen = 't'", base_query),
+                    Some(_) => format!("{} AND seen = 'f'", base_query),
+                    None => base_query,
+                };
+
                 let rows = match alert_id {
-                Some(id) if claim_user.is_admin =>
+                Some(ida) if claim_user.is_admin =>
                         client
                         .query(&format!(
-                            "{base_query} WHERE seen = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
-                        ), &[&seen, &id, &limit, &offset])
+                            "{base_query} AND n.alert_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3",
+                        ), &[&ida, &limit, &offset])
                         .await
                         .unwrap(),
-                Some (id) =>
+                Some (ida) =>
                     client
                     .query(&format!(
-                        "{base_query} WHERE seen = $1 AND p.user_id = $2 AND n.alert_id = $3 ORDER BY n.id DESC LIMIT $4 OFFSET $5",
-                    ), &[&seen, &claim_user.id, &id, &limit, &offset])
+                        "{base_query} AND p.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
+                    ), &[&claim_user.id, &ida, &limit, &offset])
                     .await
                     .unwrap(),
                 None if claim_user.is_admin => client
                     .query(
-                        &format!("{base_query} WHERE seen = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
-                        &[&seen, &limit, &offset],
+                        &format!("{base_query} ORDER BY n.id DESC LIMIT $1 OFFSET $2"),
+                        &[&limit, &offset],
                     )
                     .await
                     .unwrap(),
                 None =>
                     client.query(
-                        &format!("{base_query} WHERE seen = $1 AND p.user_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4"),
-                        &[&seen, &claim_user.id, &limit, &offset],
+                        &format!("{base_query} AND p.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
+                        &[&claim_user.id, &limit, &offset],
                     )
                     .await
                     .unwrap(),
