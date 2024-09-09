@@ -327,6 +327,11 @@
 <a href="#327" id="327">327</a>
 <a href="#328" id="328">328</a>
 <a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     expo,
     graphql::types::{jwt::Authentication, notification::Notification, user::find_user},
@@ -588,12 +593,17 @@
 
                 <span class="kw">let </span>position_ids: Vec&lt;i32&gt; = client
                     .query(
-                        <span class="string">"
-                        SELECT id FROM positions
+                        <span class="string">"SELECT id
+                        FROM positions p
                         WHERE ST_DWithin(
-                            location::geography,
-                            (SELECT area::geography FROM alerts WHERE id = $1),
-                            $2
+                                p.location::geography,
+                                (SELECT area::geography FROM alerts WHERE id = $1),
+                                $2
+                            )
+                        AND id = (
+                            SELECT MAX(id)
+                            FROM positions
+                            WHERE user_id = p.user_id
                         )"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert.id, <span class="kw-2">&amp;</span>distance],
                     )
@@ -624,7 +634,7 @@
                     .map(|i| <span class="macro">format!</span>(<span class="string">"${}"</span>, i))
                     .collect();
                 <span class="kw">let </span>query = <span class="macro">format!</span>(
-                    <span class="string">"SELECT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
+                    <span class="string">"SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
                     WHERE p.id IN ({}) AND notification_token IS NOT NULL"</span>,
                     placeholders.join(<span class="string">", "</span>)
                 );
