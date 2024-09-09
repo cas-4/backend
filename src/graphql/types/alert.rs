@@ -259,12 +259,17 @@ pub mod mutations {
 
                 let position_ids: Vec<i32> = client
                     .query(
-                        "
-                        SELECT id FROM positions
+                        "SELECT id
+                        FROM positions p
                         WHERE ST_DWithin(
-                            location::geography,
-                            (SELECT area::geography FROM alerts WHERE id = $1),
-                            $2
+                                p.location::geography,
+                                (SELECT area::geography FROM alerts WHERE id = $1),
+                                $2
+                            )
+                        AND id = (
+                            SELECT MAX(id)
+                            FROM positions
+                            WHERE user_id = p.user_id
                         )",
                         &[&alert.id, &distance],
                     )
@@ -295,7 +300,7 @@ pub mod mutations {
                     .map(|i| format!("${}", i))
                     .collect();
                 let query = format!(
-                    "SELECT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
+                    "SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
                     WHERE p.id IN ({}) AND notification_token IS NOT NULL",
                     placeholders.join(", ")
                 );
