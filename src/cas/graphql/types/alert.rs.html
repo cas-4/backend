@@ -332,6 +332,18 @@
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
 <a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     expo,
     graphql::types::{jwt::Authentication, notification::Notification, user::find_user},
@@ -550,7 +562,15 @@
                 <span class="kw">let </span>polygon = <span class="macro">format!</span>(<span class="string">"ST_MakePolygon(ST_MakeLine(ARRAY[{}]))"</span>, points);
 
                 <span class="kw">let </span>valid_query = <span class="macro">format!</span>(<span class="string">"SELECT ST_IsValid({}) as is_valid"</span>, polygon);
-                <span class="kw">let </span>rows = client.query(<span class="kw-2">&amp;</span>valid_query, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>rows;
+                <span class="kw">match </span>client.query(<span class="kw-2">&amp;</span>valid_query, <span class="kw-2">&amp;</span>[]).<span class="kw">await </span>{
+                    <span class="prelude-val">Ok</span>(r) =&gt; {
+                        rows = r;
+                    }
+                    <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Polygon is not valid"</span>));
+                    }
+                };
 
                 <span class="kw">let </span>is_valid: bool = rows[<span class="number">0</span>].get(<span class="string">"is_valid"</span>);
                 <span class="kw">if </span>!is_valid {
@@ -633,33 +653,37 @@
                 <span class="kw">let </span>placeholders: Vec&lt;String&gt; = (<span class="number">1</span>..=position_ids.len())
                     .map(|i| <span class="macro">format!</span>(<span class="string">"${}"</span>, i))
                     .collect();
-                <span class="kw">let </span>query = <span class="macro">format!</span>(
-                    <span class="string">"SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
-                    WHERE p.id IN ({}) AND notification_token IS NOT NULL"</span>,
-                    placeholders.join(<span class="string">", "</span>)
-                );
 
-                <span class="kw">let </span>tokens: Vec&lt;String&gt; = client
-                    .query(
-                        <span class="kw-2">&amp;</span>query,
-                        <span class="kw-2">&amp;</span>position_ids
-                            .iter()
-                            .map(|id| id <span class="kw">as </span><span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync))
-                            .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync)&gt;&gt;(),
+                <span class="kw">if </span>placeholders.len() &gt; <span class="number">0 </span>{
+                    <span class="kw">let </span>query = <span class="macro">format!</span>(
+                        <span class="string">"SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
+                        WHERE p.id IN ({}) AND notification_token IS NOT NULL"</span>,
+                        placeholders.join(<span class="string">", "</span>)
+                    );
+
+                    <span class="macro">println!</span>(<span class="string">"{query}"</span>);
+                    <span class="kw">let </span>tokens: Vec&lt;String&gt; = client
+                        .query(
+                            <span class="kw-2">&amp;</span>query,
+                            <span class="kw-2">&amp;</span>position_ids
+                                .iter()
+                                .map(|id| id <span class="kw">as </span><span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync))
+                                .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync)&gt;&gt;(),
+                        )
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .iter()
+                        .map(|row| <span class="macro">format!</span>(<span class="string">"ExponentPushToken[{}]"</span>, row.get::&lt;usize, String&gt;(<span class="number">0</span>)))
+                        .collect();
+
+                    expo::send(
+                        tokens,
+                        <span class="string">"New Alert!"</span>.to_string(),
+                        <span class="string">"Keep an eye open"</span>.to_string(),
                     )
                     .<span class="kw">await
-                    </span>.unwrap()
-                    .iter()
-                    .map(|row| <span class="macro">format!</span>(<span class="string">"ExponentPushToken[{}]"</span>, row.get::&lt;usize, String&gt;(<span class="number">0</span>)))
-                    .collect();
-
-                expo::send(
-                    tokens,
-                    <span class="string">"New Alert!"</span>.to_string(),
-                    <span class="string">"Keep an eye open"</span>.to_string(),
-                )
-                .<span class="kw">await
-                </span>.unwrap();
+                    </span>.unwrap();
+                }
 
                 <span class="prelude-val">Ok</span>(alert)
             }
