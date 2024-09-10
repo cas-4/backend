@@ -216,7 +216,15 @@ pub mod mutations {
                 let polygon = format!("ST_MakePolygon(ST_MakeLine(ARRAY[{}]))", points);
 
                 let valid_query = format!("SELECT ST_IsValid({}) as is_valid", polygon);
-                let rows = client.query(&valid_query, &[]).await.unwrap();
+                let rows;
+                match client.query(&valid_query, &[]).await {
+                    Ok(r) => {
+                        rows = r;
+                    }
+                    Err(_) => {
+                        return Err(async_graphql::Error::new("Polygon is not valid"));
+                    }
+                };
 
                 let is_valid: bool = rows[0].get("is_valid");
                 if !is_valid {
