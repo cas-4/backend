@@ -299,33 +299,37 @@ pub mod mutations {
                 let placeholders: Vec<String> = (1..=position_ids.len())
                     .map(|i| format!("${}", i))
                     .collect();
-                let query = format!(
-                    "SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
-                    WHERE p.id IN ({}) AND notification_token IS NOT NULL",
-                    placeholders.join(", ")
-                );
 
-                let tokens: Vec<String> = client
-                    .query(
-                        &query,
-                        &position_ids
-                            .iter()
-                            .map(|id| id as &(dyn tokio_postgres::types::ToSql + Sync))
-                            .collect::<Vec<&(dyn tokio_postgres::types::ToSql + Sync)>>(),
+                if placeholders.len() > 0 {
+                    let query = format!(
+                        "SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
+                        WHERE p.id IN ({}) AND notification_token IS NOT NULL",
+                        placeholders.join(", ")
+                    );
+
+                    println!("{query}");
+                    let tokens: Vec<String> = client
+                        .query(
+                            &query,
+                            &position_ids
+                                .iter()
+                                .map(|id| id as &(dyn tokio_postgres::types::ToSql + Sync))
+                                .collect::<Vec<&(dyn tokio_postgres::types::ToSql + Sync)>>(),
+                        )
+                        .await
+                        .unwrap()
+                        .iter()
+                        .map(|row| format!("ExponentPushToken[{}]", row.get::<usize, String>(0)))
+                        .collect();
+
+                    expo::send(
+                        tokens,
+                        "New Alert!".to_string(),
+                        "Keep an eye open".to_string(),
                     )
                     .await
-                    .unwrap()
-                    .iter()
-                    .map(|row| format!("ExponentPushToken[{}]", row.get::<usize, String>(0)))
-                    .collect();
-
-                expo::send(
-                    tokens,
-                    "New Alert!".to_string(),
-                    "Keep an eye open".to_string(),
-                )
-                .await
-                .unwrap();
+                    .unwrap();
+                }
 
                 Ok(alert)
             }
