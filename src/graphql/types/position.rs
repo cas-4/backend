@@ -12,9 +12,6 @@ pub enum MovingActivity {
     // "Car" of the doc
     InVehicle,
 
-    // Walking or running
-    OnFoot,
-
     // Running
     Running,
 
@@ -29,7 +26,6 @@ impl<'a> FromSql<'a> for MovingActivity {
     fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<MovingActivity, Box<dyn Error + Sync + Send>> {
         match std::str::from_utf8(raw)? {
             "InVehicle" => Ok(MovingActivity::InVehicle),
-            "OnFoot" => Ok(MovingActivity::OnFoot),
             "Running" => Ok(MovingActivity::Running),
             "Walking" => Ok(MovingActivity::Walking),
             "Still" => Ok(MovingActivity::Still),
@@ -50,7 +46,6 @@ impl ToSql for MovingActivity {
     ) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
         let value = match *self {
             MovingActivity::InVehicle => "InVehicle",
-            MovingActivity::OnFoot => "OnFoot",
             MovingActivity::Running => "Running",
             MovingActivity::Walking => "Walking",
             MovingActivity::Still => "Still",

@@ -9,7 +9,7 @@ CREATE TABLE users(
     PRIMARY KEY (id)
 );
 
-CREATE TYPE moving_activity AS ENUM ('InVehicle', 'OnFoot', 'Running', 'Walking', 'Still');
+CREATE TYPE moving_activity AS ENUM ('InVehicle', 'Running', 'Walking', 'Still');
 
 CREATE TABLE positions(
     id SERIAL NOT NULL,
