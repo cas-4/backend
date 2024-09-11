@@ -33,7 +33,7 @@ After that you must copy the `schema/init.sql` file into the database.
 
 Now just run the app
 
-```
+```text
 cargo run
 ```
 
@@ -44,19 +44,19 @@ pushes the latest release version to a [GHCR.io package](https://github.com/cas-
 
 A new version is released using
 
-```
+```text
 ./scripts/release X.Y.Z
 ```
 
 Now you just exec
 
-```
+```text
 docker pull ghcr.io/cas-4/backend:latest
 ```
 
 Or you can build a new image
 
-```
+```text
 docker build -t cas:latest .
 docker run \
     -e RUST_LOG=... \
@@ -69,7 +69,7 @@ docker run \
 
 Or the Docker compose which puts up also the PostgreSQL locally.
 
-```
+```text
 docker compose up
 ```
 
@@ -78,7 +78,7 @@ docker compose up
 If you do not want to use Docker or Docker compose directly, you can use a
 Kubernetes cluster like [MiniKube](https://minikube.sigs.k8s.io/docs/).
 
-```
+```text
 ./scripts/k8s (apply|delete)
 ```
 
