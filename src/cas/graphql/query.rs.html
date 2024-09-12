@@ -127,6 +127,11 @@
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graphql::types::<span class="kw-2">*</span>;
 <span class="kw">use </span>async_graphql::{Context, Object};
 
@@ -221,7 +226,7 @@
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{alerts(id: 12) {id, userId, createdAt, area, extendedArea, level}}"}'
+    /// -d '{"query":"{alerts(id: 12) {id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3}}"}'
     /// ```
     </span><span class="kw">async fn </span>alerts&lt;<span class="lifetime">'ctx</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -241,7 +246,12 @@
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
     /// -d '{"query":"{notifications(seen: false alertId: 1) {
-    /// id, alert { id, userId, createdAt, area, extendedArea, level, reachedUsers }, position {id, userId, createdAt, latitude, longitude, movingActivity}, seen, createdAt
+    /// id,
+    /// alert { id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3, reachedUsers },
+    /// position {id, userId, createdAt, latitude, longitude, movingActivity},
+    /// seen,
+    /// level,
+    /// createdAt
     /// }}"}'
     /// ```
     </span><span class="kw">async fn </span>notifications&lt;<span class="lifetime">'ctx</span>&gt;(

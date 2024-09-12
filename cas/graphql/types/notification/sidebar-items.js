@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["mutations","query"],"struct":["Notification","NotificationUpdateInput"]};
+window.SIDEBAR_ITEMS = {"enum":["LevelAlert"],"mod":["mutations","query"],"struct":["Notification","NotificationUpdateInput"]};

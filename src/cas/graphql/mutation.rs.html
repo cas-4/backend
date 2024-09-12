@@ -195,6 +195,8 @@
 <a href="#195" id="195">195</a>
 <a href="#196" id="196">196</a>
 <a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graphql::types::{
     alert,
     jwt::{<span class="self">self</span>},
@@ -346,7 +348,7 @@
     /// -H "Content-Type: application/json" \
     /// -H "Authorization: Bearer ****" \
     /// -d '{
-    ///   "query": "mutation NewAlert($input: AlertInput!) { newAlert(input: $input) { id createdAt level } }",
+    ///   "query": "mutation NewAlert($input: AlertInput!) { newAlert(input: $input) { id createdAt } }",
     ///   "variables": {
     ///     "input": {
     ///       "points": [
@@ -356,7 +358,9 @@
     ///         { "latitude": 44.498321, "longitude": 11.312145},
     ///         { "latitude": 44.490025, "longitude": 11.311498}
     ///       ],
-    ///       "level": "TWO"
+    ///       "text1": "Alert level 1",
+    ///       "text2": "Alert level 2",
+    ///       "text3": "Alert level 3"
     ///     }
     ///   }
     /// }

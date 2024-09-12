@@ -335,74 +335,18 @@
 <a href="#335" id="335">335</a>
 <a href="#336" id="336">336</a>
 <a href="#337" id="337">337</a>
-<a href="#338" id="338">338</a>
-<a href="#339" id="339">339</a>
-<a href="#340" id="340">340</a>
-<a href="#341" id="341">341</a>
-<a href="#342" id="342">342</a>
-<a href="#343" id="343">343</a>
-<a href="#344" id="344">344</a>
-<a href="#345" id="345">345</a>
-<a href="#346" id="346">346</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     expo,
-    graphql::types::{jwt::Authentication, notification::Notification, user::find_user},
+    graphql::types::{
+        jwt::Authentication,
+        notification::{LevelAlert, Notification},
+        user::find_user,
+    },
     state::AppState,
 };
-<span class="kw">use </span>async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
+<span class="kw">use </span>async_graphql::{Context, FieldResult, InputObject, SimpleObject};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::error::Error;
-<span class="kw">use </span>tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
-
-<span class="attr">#[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-</span><span class="doccomment">/// Enumeration which refers to the level of alert
-</span><span class="kw">pub enum </span>LevelAlert {
-    <span class="comment">// User in the AREA
-    </span>One,
-
-    <span class="comment">// User in the AREA OR &lt; 1km distance
-    </span>Two,
-
-    <span class="comment">// User in the AREA OR &lt; 2km distance
-    </span>Three,
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FromSql&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>LevelAlert {
-    <span class="kw">fn </span>from_sql(_ty: <span class="kw-2">&amp;</span>Type, raw: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;LevelAlert, Box&lt;<span class="kw">dyn </span>Error + Sync + Send&gt;&gt; {
-        <span class="kw">match </span>std::str::from_utf8(raw)<span class="question-mark">? </span>{
-            <span class="string">"One" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::One),
-            <span class="string">"Two" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::Two),
-            <span class="string">"Three" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::Three),
-            other =&gt; <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"Unknown variant: {}"</span>, other).into()),
-        }
-    }
-
-    <span class="kw">fn </span>accepts(ty: <span class="kw-2">&amp;</span>Type) -&gt; bool {
-        ty.name() == <span class="string">"level_alert"
-    </span>}
-}
-
-<span class="kw">impl </span>ToSql <span class="kw">for </span>LevelAlert {
-    <span class="kw">fn </span>to_sql(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _ty: <span class="kw-2">&amp;</span>Type,
-        out: <span class="kw-2">&amp;mut </span>bytes::BytesMut,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;IsNull, Box&lt;<span class="kw">dyn </span>Error + Sync + Send&gt;&gt; {
-        <span class="kw">let </span>value = <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-            LevelAlert::One =&gt; <span class="string">"One"</span>,
-            LevelAlert::Two =&gt; <span class="string">"Two"</span>,
-            LevelAlert::Three =&gt; <span class="string">"Three"</span>,
-        };
-        out.extend_from_slice(value.as_bytes());
-        <span class="prelude-val">Ok</span>(IsNull::No)
-    }
-
-    <span class="kw">fn </span>accepts(ty: <span class="kw-2">&amp;</span>Type) -&gt; bool {
-        ty.name() == <span class="string">"level_alert"
-    </span>}
-
-    <span class="macro">to_sql_checked!</span>();
-}
+<span class="kw">use </span>std::str::FromStr;
 
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>PolygonValid {
@@ -416,8 +360,11 @@
     <span class="kw">pub </span>user_id: i32,
     <span class="kw">pub </span>created_at: i64,
     <span class="kw">pub </span>area: String,
-    <span class="kw">pub </span>extended_area: String,
-    <span class="kw">pub </span>level: LevelAlert,
+    <span class="kw">pub </span>area_level2: String,
+    <span class="kw">pub </span>area_level3: String,
+    <span class="kw">pub </span>text1: String,
+    <span class="kw">pub </span>text2: String,
+    <span class="kw">pub </span>text3: String,
     <span class="kw">pub </span>reached_users: i32,
 }
 
@@ -431,7 +378,9 @@
 </span><span class="doccomment">/// Alert input struct
 </span><span class="kw">pub struct </span>AlertInput {
     <span class="kw">pub </span>points: Vec&lt;Point&gt;,
-    <span class="kw">pub </span>level: LevelAlert,
+    <span class="kw">pub </span>text1: String,
+    <span class="kw">pub </span>text2: String,
+    <span class="kw">pub </span>text3: String,
 }
 
 <span class="kw">pub mod </span>query {
@@ -463,18 +412,11 @@
                             user_id,
                             extract(epoch from created_at)::double precision as created_at,
                             ST_AsText(area) as area,
-                            ST_AsText(
-                                ST_Buffer(
-                                    area::geography,
-                                    CASE
-                                        WHEN level = 'One' THEN 0
-                                        WHEN level = 'Two' THEN 1000
-                                        WHEN level = 'Three' THEN 2000
-                                        ELSE 0
-                                    END
-                                )
-                            ) as extended_area,
-                            level,
+                            ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                            ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                            text1,
+                            text2,
+                            text3,
                             reached_users
                     FROM alerts
                     WHERE id = $1"</span>,
@@ -488,18 +430,11 @@
                         user_id,
                         extract(epoch from created_at)::double precision as created_at,
                         ST_AsText(area) as area,
-                        ST_AsText(
-                            ST_Buffer(
-                                area::geography,
-                                CASE
-                                    WHEN level = 'One' THEN 0
-                                    WHEN level = 'Two' THEN 1000
-                                    WHEN level = 'Three' THEN 2000
-                                    ELSE 0
-                                END
-                            )
-                        ) as extended_area,
-                        level,
+                        ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                        ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                        text1,
+                        text2,
+                        text3,
                         reached_users
                     FROM alerts
                     ORDER BY id DESC
@@ -518,8 +453,11 @@
                         user_id: row.get(<span class="string">"user_id"</span>),
                         created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
                         area: row.get(<span class="string">"area"</span>),
-                        extended_area: row.get(<span class="string">"extended_area"</span>),
-                        level: row.get(<span class="string">"level"</span>),
+                        area_level2: row.get(<span class="string">"area_level2"</span>),
+                        area_level3: row.get(<span class="string">"area_level3"</span>),
+                        text1: row.get(<span class="string">"text1"</span>),
+                        text2: row.get(<span class="string">"text2"</span>),
+                        text3: row.get(<span class="string">"text3"</span>),
                         reached_users: row.get(<span class="string">"reached_users"</span>),
                     })
                     .collect();
@@ -578,15 +516,23 @@
                 }
 
                 <span class="kw">let </span>insert_query = <span class="macro">format!</span>(
-                    <span class="string">"INSERT INTO alerts (user_id, area, level)
-                    VALUES($1, {}, $2)
-                    RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_AsText(area) as area,
-                    ST_AsText(ST_Buffer(area::geography, CASE WHEN level = 'One' THEN 0 WHEN level = 'Two' THEN 1000 WHEN level = 'Three' THEN 2000 ELSE 0 END)) as extended_area, level, reached_users"</span>,
+                    <span class="string">"INSERT INTO alerts (user_id, area, text1, text2, text3)
+                    VALUES($1, {}, $2, $3, $4)
+                    RETURNING
+                    id, user_id, extract(epoch from created_at)::double precision as created_at,
+                    ST_AsText(area) as area,
+                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                    text1, text2, text3,
+                    reached_users"</span>,
                     polygon
                 );
 
                 <span class="kw">let </span>rows = client
-                    .query(<span class="kw-2">&amp;</span>insert_query, <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claims.user_id, <span class="kw-2">&amp;</span>input.level])
+                    .query(
+                        <span class="kw-2">&amp;</span>insert_query,
+                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claims.user_id, <span class="kw-2">&amp;</span>input.text1, <span class="kw-2">&amp;</span>input.text2, <span class="kw-2">&amp;</span>input.text3],
+                    )
                     .<span class="kw">await
                     </span>.unwrap();
                 <span class="kw">let </span><span class="kw-2">mut </span>alert = rows
@@ -596,8 +542,11 @@
                         user_id: row.get(<span class="string">"user_id"</span>),
                         created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
                         area: row.get(<span class="string">"area"</span>),
-                        extended_area: row.get(<span class="string">"extended_area"</span>),
-                        level: row.get(<span class="string">"level"</span>),
+                        area_level2: row.get(<span class="string">"area_level2"</span>),
+                        area_level3: row.get(<span class="string">"area_level3"</span>),
+                        text1: row.get(<span class="string">"text1"</span>),
+                        text2: row.get(<span class="string">"text2"</span>),
+                        text3: row.get(<span class="string">"text3"</span>),
                         reached_users: row.get(<span class="string">"reached_users"</span>),
                     })
                     .collect::&lt;Vec&lt;Alert&gt;&gt;()
@@ -605,43 +554,111 @@
                     .cloned()
                     .ok_or_else(|| async_graphql::Error::new(<span class="string">"Failed to create alert"</span>))<span class="question-mark">?</span>;
 
-                <span class="kw">let </span>distance: f64 = <span class="kw">match </span>alert.level {
-                    LevelAlert::One =&gt; <span class="number">0.0</span>,
-                    LevelAlert::Two =&gt; <span class="number">1000.0</span>,
-                    LevelAlert::Three =&gt; <span class="number">2000.0</span>,
-                };
-
-                <span class="kw">let </span>position_ids: Vec&lt;i32&gt; = client
-                    .query(
-                        <span class="string">"SELECT id
-                        FROM positions p
-                        WHERE ST_DWithin(
-                                p.location::geography,
-                                (SELECT area::geography FROM alerts WHERE id = $1),
-                                $2
-                            )
-                        AND id = (
-                            SELECT MAX(id)
-                            FROM positions
-                            WHERE user_id = p.user_id
-                        )"</span>,
-                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert.id, <span class="kw-2">&amp;</span>distance],
-                    )
-                    .<span class="kw">await
-                    </span>.unwrap()
-                    .iter()
-                    .map(|row| row.get(<span class="number">0</span>))
-                    .collect();
-
-                <span class="kw">let </span><span class="kw-2">mut </span>notification_ids = <span class="macro">vec!</span>[];
-                <span class="kw">for </span>id <span class="kw">in </span><span class="kw-2">&amp;</span>position_ids {
-                    <span class="kw">let </span>notification = Notification::insert_db(client, alert.id, <span class="kw-2">*</span>id)
-                        .<span class="kw">await
-                        </span>.unwrap();
-                    notification_ids.push(notification);
+                <span class="kw">struct </span>Level&lt;<span class="lifetime">'a</span>&gt; {
+                    text: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str,
+                    distance: f64,
                 }
 
-                alert.reached_users = notification_ids.len() <span class="kw">as </span>i32;
+                <span class="kw">let </span>levels = <span class="macro">vec!</span>[
+                    Level {
+                        text: <span class="string">"One"</span>,
+                        distance: <span class="number">0f64</span>,
+                    },
+                    Level {
+                        text: <span class="string">"Two"</span>,
+                        distance: <span class="number">1000f64</span>,
+                    },
+                    Level {
+                        text: <span class="string">"Three"</span>,
+                        distance: <span class="number">2000f64</span>,
+                    },
+                ];
+
+                <span class="kw">let </span><span class="kw-2">mut </span>positions: Vec&lt;i32&gt; = <span class="macro">vec!</span>[];
+
+                <span class="comment">// Send notifications for each available level
+                </span><span class="kw">for </span>level <span class="kw">in </span>levels {
+                    <span class="kw">let </span>position_ids: Vec&lt;i32&gt; = client
+                        .query(
+                            <span class="string">"SELECT id
+                            FROM positions p
+                            WHERE ST_DWithin(
+                                    p.location::geography,
+                                    (SELECT area::geography FROM alerts WHERE id = $1),
+                                    $2
+                                )
+                            AND id = (
+                                SELECT MAX(id)
+                                FROM positions
+                                WHERE user_id = p.user_id
+                            )"</span>,
+                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert.id, <span class="kw-2">&amp;</span>level.distance],
+                        )
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .iter()
+                        .map(|row| row.get(<span class="number">0</span>))
+                        .filter(|id| !positions.contains(id))
+                        .collect();
+
+                    <span class="kw">let </span><span class="kw-2">mut </span>notification_ids = <span class="macro">vec!</span>[];
+                    <span class="kw">for </span>id <span class="kw">in </span><span class="kw-2">&amp;</span>position_ids {
+                        <span class="kw">let </span>notification = Notification::insert_db(
+                            client,
+                            alert.id,
+                            <span class="kw-2">*</span>id,
+                            LevelAlert::from_str(level.text).unwrap(),
+                        )
+                        .<span class="kw">await
+                        </span>.unwrap();
+                        notification_ids.push(notification);
+                    }
+
+                    alert.reached_users += notification_ids.len() <span class="kw">as </span>i32;
+                    <span class="kw">let </span>placeholders: Vec&lt;String&gt; = (<span class="number">1</span>..=position_ids.len())
+                        .map(|i| <span class="macro">format!</span>(<span class="string">"${}"</span>, i))
+                        .collect();
+
+                    <span class="kw">if </span>placeholders.len() &gt; <span class="number">0 </span>{
+                        <span class="kw">let </span>query = <span class="macro">format!</span>(
+                            <span class="string">"SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
+                            WHERE p.id IN ({}) AND notification_token IS NOT NULL"</span>,
+                            placeholders.join(<span class="string">", "</span>)
+                        );
+
+                        <span class="kw">let </span>tokens: Vec&lt;String&gt; = client
+                            .query(
+                                <span class="kw-2">&amp;</span>query,
+                                <span class="kw-2">&amp;</span>position_ids
+                                    .iter()
+                                    .map(|id| id <span class="kw">as </span><span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync))
+                                    .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync)&gt;&gt;(),
+                            )
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .iter()
+                            .map(|row| {
+                                <span class="macro">format!</span>(<span class="string">"ExponentPushToken[{}]"</span>, row.get::&lt;usize, String&gt;(<span class="number">0</span>))
+                            })
+                            .collect();
+
+                        expo::send(
+                            tokens,
+                            <span class="string">"New Alert!"</span>.to_string(),
+                            <span class="kw">match </span>level.text {
+                                <span class="string">"One" </span>=&gt; alert.text1.clone(),
+                                <span class="string">"Two" </span>=&gt; alert.text2.clone(),
+                                <span class="string">"Three" </span>=&gt; alert.text3.clone(),
+                                <span class="kw">_ </span>=&gt; <span class="string">"Check it out in app!"</span>.to_string(),
+                            },
+                        )
+                        .<span class="kw">await
+                        </span>.unwrap();
+                    }
+
+                    positions.extend(position_ids);
+                }
+
                 client
                     .query(
                         <span class="string">"UPDATE alerts SET reached_users = $1 WHERE id = $2"</span>,
@@ -649,41 +666,6 @@
                     )
                     .<span class="kw">await
                     </span>.unwrap();
-
-                <span class="kw">let </span>placeholders: Vec&lt;String&gt; = (<span class="number">1</span>..=position_ids.len())
-                    .map(|i| <span class="macro">format!</span>(<span class="string">"${}"</span>, i))
-                    .collect();
-
-                <span class="kw">if </span>placeholders.len() &gt; <span class="number">0 </span>{
-                    <span class="kw">let </span>query = <span class="macro">format!</span>(
-                        <span class="string">"SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
-                        WHERE p.id IN ({}) AND notification_token IS NOT NULL"</span>,
-                        placeholders.join(<span class="string">", "</span>)
-                    );
-
-                    <span class="macro">println!</span>(<span class="string">"{query}"</span>);
-                    <span class="kw">let </span>tokens: Vec&lt;String&gt; = client
-                        .query(
-                            <span class="kw-2">&amp;</span>query,
-                            <span class="kw-2">&amp;</span>position_ids
-                                .iter()
-                                .map(|id| id <span class="kw">as </span><span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync))
-                                .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync)&gt;&gt;(),
-                        )
-                        .<span class="kw">await
-                        </span>.unwrap()
-                        .iter()
-                        .map(|row| <span class="macro">format!</span>(<span class="string">"ExponentPushToken[{}]"</span>, row.get::&lt;usize, String&gt;(<span class="number">0</span>)))
-                        .collect();
-
-                    expo::send(
-                        tokens,
-                        <span class="string">"New Alert!"</span>.to_string(),
-                        <span class="string">"Keep an eye open"</span>.to_string(),
-                    )
-                    .<span class="kw">await
-                    </span>.unwrap();
-                }
 
                 <span class="prelude-val">Ok</span>(alert)
             }

@@ -291,14 +291,142 @@
 <a href="#291" id="291">291</a>
 <a href="#292" id="292">292</a>
 <a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
     state::AppState,
 };
-<span class="kw">use </span>async_graphql::{Context, FieldResult, InputObject, SimpleObject};
+<span class="kw">use </span>async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>std::{error::Error, str::FromStr};
+<span class="kw">use </span>tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
 <span class="kw">use </span>tokio_postgres::Client;
+
+<span class="attr">#[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+</span><span class="doccomment">/// Enumeration which refers to the level of alert
+</span><span class="kw">pub enum </span>LevelAlert {
+    <span class="comment">// User in the AREA
+    </span>One,
+
+    <span class="comment">// User in the AREA OR &lt; 1km distance
+    </span>Two,
+
+    <span class="comment">// User in the AREA OR &lt; 2km distance
+    </span>Three,
+}
+
+<span class="kw">impl </span>FromStr <span class="kw">for </span>LevelAlert {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= String;
+
+    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
+        <span class="kw">match </span>s {
+            <span class="string">"One" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::One),
+            <span class="string">"Two" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::Two),
+            <span class="string">"Three" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::Three),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(String::from(<span class="string">"Can't parse this value as Level"</span>)),
+        }
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FromSql&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>LevelAlert {
+    <span class="kw">fn </span>from_sql(_ty: <span class="kw-2">&amp;</span>Type, raw: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;LevelAlert, Box&lt;<span class="kw">dyn </span>Error + Sync + Send&gt;&gt; {
+        <span class="kw">match </span>std::str::from_utf8(raw)<span class="question-mark">? </span>{
+            <span class="string">"One" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::One),
+            <span class="string">"Two" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::Two),
+            <span class="string">"Three" </span>=&gt; <span class="prelude-val">Ok</span>(LevelAlert::Three),
+            other =&gt; <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"Unknown variant: {}"</span>, other).into()),
+        }
+    }
+
+    <span class="kw">fn </span>accepts(ty: <span class="kw-2">&amp;</span>Type) -&gt; bool {
+        ty.name() == <span class="string">"level_alert"
+    </span>}
+}
+
+<span class="kw">impl </span>ToSql <span class="kw">for </span>LevelAlert {
+    <span class="kw">fn </span>to_sql(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _ty: <span class="kw-2">&amp;</span>Type,
+        out: <span class="kw-2">&amp;mut </span>bytes::BytesMut,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;IsNull, Box&lt;<span class="kw">dyn </span>Error + Sync + Send&gt;&gt; {
+        <span class="kw">let </span>value = <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+            LevelAlert::One =&gt; <span class="string">"One"</span>,
+            LevelAlert::Two =&gt; <span class="string">"Two"</span>,
+            LevelAlert::Three =&gt; <span class="string">"Three"</span>,
+        };
+        out.extend_from_slice(value.as_bytes());
+        <span class="prelude-val">Ok</span>(IsNull::No)
+    }
+
+    <span class="kw">fn </span>accepts(ty: <span class="kw-2">&amp;</span>Type) -&gt; bool {
+        ty.name() == <span class="string">"level_alert"
+    </span>}
+
+    <span class="macro">to_sql_checked!</span>();
+}
 
 <span class="attr">#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 </span><span class="doccomment">/// Notification struct
@@ -307,6 +435,7 @@
     <span class="kw">pub </span>alert: Alert,
     <span class="kw">pub </span>position: Position,
     <span class="kw">pub </span>seen: bool,
+    <span class="kw">pub </span>level: LevelAlert,
     <span class="kw">pub </span>created_at: i64,
 }
 
@@ -324,14 +453,15 @@
         client: <span class="kw-2">&amp;</span>Client,
         alert_id: i32,
         position_id: i32,
+        level: LevelAlert,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;i32, AppError&gt; {
         <span class="kw">match </span>client
             .query(
-                <span class="string">"INSERT INTO notifications(alert_id, position_id)
-                VALUES($1, $2)
+                <span class="string">"INSERT INTO notifications(alert_id, position_id, level)
+                VALUES($1, $2, $3)
                 RETURNING id
                 "</span>,
-                <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert_id, <span class="kw-2">&amp;</span>position_id],
+                <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert_id, <span class="kw-2">&amp;</span>position_id, <span class="kw-2">&amp;</span>level],
             )
             .<span class="kw">await
         </span>{
@@ -383,23 +513,17 @@
                                 n.alert_id,
                                 n.position_id,
                                 n.seen,
+                                n.level,
                                 extract(epoch from n.created_at)::double precision as created_at,
                                 a.id as alert_id,
                                 a.user_id as alert_user_id,
                                 extract(epoch from a.created_at)::double precision as alert_created_at,
                                 ST_AsText(a.area) as alert_area,
-                                ST_AsText(
-                                    ST_Buffer(
-                                        a.area::geography,
-                                        CASE
-                                            WHEN level = 'One' THEN 0
-                                            WHEN level = 'Two' THEN 1000
-                                            WHEN level = 'Three' THEN 2000
-                                            ELSE 0
-                                        END
-                                    )
-                                ) as alert_extended_area,
-                                a.level as alert_level,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as alert_area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as alert_area_level3,
+                                a.text1 as alert_text1,
+                                a.text2 as alert_text2,
+                                a.text3 as alert_text3,
                                 a.reached_users as alert_reached_users,
                                 p.id as position_id,
                                 p.user_id as position_user_id,
@@ -462,8 +586,11 @@
                             user_id: row.get(<span class="string">"alert_user_id"</span>),
                             created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"alert_created_at"</span>) <span class="kw">as </span>i64,
                             area: row.get(<span class="string">"alert_area"</span>),
-                            extended_area: row.get(<span class="string">"alert_extended_area"</span>),
-                            level: row.get(<span class="string">"alert_level"</span>),
+                            area_level2: row.get(<span class="string">"alert_area_level2"</span>),
+                            area_level3: row.get(<span class="string">"alert_area_level3"</span>),
+                            text1: row.get(<span class="string">"alert_text1"</span>),
+                            text2: row.get(<span class="string">"alert_text2"</span>),
+                            text3: row.get(<span class="string">"alert_text3"</span>),
                             reached_users: row.get(<span class="string">"alert_reached_users"</span>),
                         },
                         position: Position {
@@ -475,6 +602,7 @@
                             moving_activity: row.get(<span class="string">"position_activity"</span>),
                         },
                         seen: row.get(<span class="string">"seen"</span>),
+                        level: row.get(<span class="string">"level"</span>),
                         created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
                     })
                     .collect();
@@ -506,24 +634,18 @@
                 <span class="kw">let </span>notification = client.query(<span class="string">"SELECT n.id,
                                 n.alert_id,
                                 n.position_id,
+                                n.level,
                                 n.seen,
                                 extract(epoch from n.created_at)::double precision as created_at,
                                 a.id as alert_id,
                                 a.user_id as alert_user_id,
                                 extract(epoch from a.created_at)::double precision as alert_created_at,
                                 ST_AsText(a.area) as alert_area,
-                                ST_AsText(
-                                    ST_Buffer(
-                                        a.area::geography,
-                                        CASE
-                                            WHEN level = 'One' THEN 0
-                                            WHEN level = 'Two' THEN 1000
-                                            WHEN level = 'Three' THEN 2000
-                                            ELSE 0
-                                        END
-                                    )
-                                ) as alert_extended_area,
-                                a.level as alert_level,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as alert_area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as alert_area_level3,
+                                a.text1 as alert_text1,
+                                a.text2 as alert_text2,
+                                a.text3 as alert_text3,
                                 a.reached_users as alert_reached_users,
                                 p.id as position_id,
                                 p.user_id as position_user_id,
@@ -547,8 +669,11 @@
                             user_id: row.get(<span class="string">"alert_user_id"</span>),
                             created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"alert_created_at"</span>) <span class="kw">as </span>i64,
                             area: row.get(<span class="string">"alert_area"</span>),
-                            extended_area: row.get(<span class="string">"alert_extended_area"</span>),
-                            level: row.get(<span class="string">"alert_level"</span>),
+                            area_level2: row.get(<span class="string">"alert_area_level2"</span>),
+                            area_level3: row.get(<span class="string">"alert_area_level3"</span>),
+                            text1: row.get(<span class="string">"alert_text1"</span>),
+                            text2: row.get(<span class="string">"alert_text2"</span>),
+                            text3: row.get(<span class="string">"alert_text3"</span>),
                             reached_users: row.get(<span class="string">"alert_reached_users"</span>),
                         },
                         position: Position {
@@ -560,6 +685,7 @@
                             moving_activity: row.get(<span class="string">"position_activity"</span>),
                         },
                         seen: row.get(<span class="string">"seen"</span>),
+                        level: row.get(<span class="string">"level"</span>),
                         created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
                     })
                     .collect::&lt;Vec&lt;Notification&gt;&gt;()
