@@ -149,7 +149,7 @@ impl Mutation {
     /// -H "Content-Type: application/json" \
     /// -H "Authorization: Bearer ****" \
     /// -d '{
-    ///   "query": "mutation NewAlert($input: AlertInput!) { newAlert(input: $input) { id createdAt level } }",
+    ///   "query": "mutation NewAlert($input: AlertInput!) { newAlert(input: $input) { id createdAt } }",
     ///   "variables": {
     ///     "input": {
     ///       "points": [
@@ -159,7 +159,9 @@ impl Mutation {
     ///         { "latitude": 44.498321, "longitude": 11.312145},
     ///         { "latitude": 44.490025, "longitude": 11.311498}
     ///       ],
-    ///       "level": "TWO"
+    ///       "text1": "Alert level 1",
+    ///       "text2": "Alert level 2",
+    ///       "text3": "Alert level 3"
     ///     }
     ///   }
     /// }

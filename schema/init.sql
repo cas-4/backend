@@ -29,7 +29,9 @@ CREATE TABLE alerts(
     user_id INTEGER NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     area GEOMETRY(Polygon, 4326),
-    level level_alert NOT NULL,
+    text1 text NOT NULL,
+    text2 text NOT NULL,
+    text3 text NOT NULL,
     reached_users INTEGER DEFAULT 0 NOT NULL,
     PRIMARY KEY(id),
     CONSTRAINT fk_users_id
@@ -41,6 +43,7 @@ CREATE TABLE notifications(
     alert_id INTEGER NOT NULL,
     position_id INTEGER NOT NULL,
     seen BOOLEAN DEFAULT false,
+    level level_alert NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY(id),
     CONSTRAINT fk_alerts_id

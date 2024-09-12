@@ -92,7 +92,7 @@ impl Query {
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{alerts(id: 12) {id, userId, createdAt, area, extendedArea, level}}"}'
+    /// -d '{"query":"{alerts(id: 12) {id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3}}"}'
     /// ```
     async fn alerts<'ctx>(
         &self,
@@ -112,7 +112,12 @@ impl Query {
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
     /// -d '{"query":"{notifications(seen: false alertId: 1) {
-    /// id, alert { id, userId, createdAt, area, extendedArea, level, reachedUsers }, position {id, userId, createdAt, latitude, longitude, movingActivity}, seen, createdAt
+    /// id,
+    /// alert { id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3, reachedUsers },
+    /// position {id, userId, createdAt, latitude, longitude, movingActivity},
+    /// seen,
+    /// level,
+    /// createdAt
     /// }}"}'
     /// ```
     async fn notifications<'ctx>(

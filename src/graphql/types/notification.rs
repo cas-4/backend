@@ -3,9 +3,74 @@ use crate::{
     graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
     state::AppState,
 };
-use async_graphql::{Context, FieldResult, InputObject, SimpleObject};
+use async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
+use std::{error::Error, str::FromStr};
+use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
 use tokio_postgres::Client;
+
+#[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+/// Enumeration which refers to the level of alert
+pub enum LevelAlert {
+    // User in the AREA
+    One,
+
+    // User in the AREA OR < 1km distance
+    Two,
+
+    // User in the AREA OR < 2km distance
+    Three,
+}
+
+impl FromStr for LevelAlert {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "One" => Ok(LevelAlert::One),
+            "Two" => Ok(LevelAlert::Two),
+            "Three" => Ok(LevelAlert::Three),
+            _ => Err(String::from("Can't parse this value as Level")),
+        }
+    }
+}
+
+impl<'a> FromSql<'a> for LevelAlert {
+    fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<LevelAlert, Box<dyn Error + Sync + Send>> {
+        match std::str::from_utf8(raw)? {
+            "One" => Ok(LevelAlert::One),
+            "Two" => Ok(LevelAlert::Two),
+            "Three" => Ok(LevelAlert::Three),
+            other => Err(format!("Unknown variant: {}", other).into()),
+        }
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty.name() == "level_alert"
+    }
+}
+
+impl ToSql for LevelAlert {
+    fn to_sql(
+        &self,
+        _ty: &Type,
+        out: &mut bytes::BytesMut,
+    ) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
+        let value = match *self {
+            LevelAlert::One => "One",
+            LevelAlert::Two => "Two",
+            LevelAlert::Three => "Three",
+        };
+        out.extend_from_slice(value.as_bytes());
+        Ok(IsNull::No)
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty.name() == "level_alert"
+    }
+
+    to_sql_checked!();
+}
 
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 /// Notification struct
@@ -14,6 +79,7 @@ pub struct Notification {
     pub alert: Alert,
     pub position: Position,
     pub seen: bool,
+    pub level: LevelAlert,
     pub created_at: i64,
 }
 
@@ -31,14 +97,15 @@ impl Notification {
         client: &Client,
         alert_id: i32,
         position_id: i32,
+        level: LevelAlert,
     ) -> Result<i32, AppError> {
         match client
             .query(
-                "INSERT INTO notifications(alert_id, position_id)
-                VALUES($1, $2)
+                "INSERT INTO notifications(alert_id, position_id, level)
+                VALUES($1, $2, $3)
                 RETURNING id
                 ",
-                &[&alert_id, &position_id],
+                &[&alert_id, &position_id, &level],
             )
             .await
         {
@@ -90,23 +157,17 @@ pub mod query {
                                 n.alert_id,
                                 n.position_id,
                                 n.seen,
+                                n.level,
                                 extract(epoch from n.created_at)::double precision as created_at,
                                 a.id as alert_id,
                                 a.user_id as alert_user_id,
                                 extract(epoch from a.created_at)::double precision as alert_created_at,
                                 ST_AsText(a.area) as alert_area,
-                                ST_AsText(
-                                    ST_Buffer(
-                                        a.area::geography,
-                                        CASE
-                                            WHEN level = 'One' THEN 0
-                                            WHEN level = 'Two' THEN 1000
-                                            WHEN level = 'Three' THEN 2000
-                                            ELSE 0
-                                        END
-                                    )
-                                ) as alert_extended_area,
-                                a.level as alert_level,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as alert_area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as alert_area_level3,
+                                a.text1 as alert_text1,
+                                a.text2 as alert_text2,
+                                a.text3 as alert_text3,
                                 a.reached_users as alert_reached_users,
                                 p.id as position_id,
                                 p.user_id as position_user_id,
@@ -169,8 +230,11 @@ pub mod query {
                             user_id: row.get("alert_user_id"),
                             created_at: row.get::<_, f64>("alert_created_at") as i64,
                             area: row.get("alert_area"),
-                            extended_area: row.get("alert_extended_area"),
-                            level: row.get("alert_level"),
+                            area_level2: row.get("alert_area_level2"),
+                            area_level3: row.get("alert_area_level3"),
+                            text1: row.get("alert_text1"),
+                            text2: row.get("alert_text2"),
+                            text3: row.get("alert_text3"),
                             reached_users: row.get("alert_reached_users"),
                         },
                         position: Position {
@@ -182,6 +246,7 @@ pub mod query {
                             moving_activity: row.get("position_activity"),
                         },
                         seen: row.get("seen"),
+                        level: row.get("level"),
                         created_at: row.get::<_, f64>("created_at") as i64,
                     })
                     .collect();
@@ -213,24 +278,18 @@ pub mod mutations {
                 let notification = client.query("SELECT n.id,
                                 n.alert_id,
                                 n.position_id,
+                                n.level,
                                 n.seen,
                                 extract(epoch from n.created_at)::double precision as created_at,
                                 a.id as alert_id,
                                 a.user_id as alert_user_id,
                                 extract(epoch from a.created_at)::double precision as alert_created_at,
                                 ST_AsText(a.area) as alert_area,
-                                ST_AsText(
-                                    ST_Buffer(
-                                        a.area::geography,
-                                        CASE
-                                            WHEN level = 'One' THEN 0
-                                            WHEN level = 'Two' THEN 1000
-                                            WHEN level = 'Three' THEN 2000
-                                            ELSE 0
-                                        END
-                                    )
-                                ) as alert_extended_area,
-                                a.level as alert_level,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as alert_area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as alert_area_level3,
+                                a.text1 as alert_text1,
+                                a.text2 as alert_text2,
+                                a.text3 as alert_text3,
                                 a.reached_users as alert_reached_users,
                                 p.id as position_id,
                                 p.user_id as position_user_id,
@@ -254,8 +313,11 @@ pub mod mutations {
                             user_id: row.get("alert_user_id"),
                             created_at: row.get::<_, f64>("alert_created_at") as i64,
                             area: row.get("alert_area"),
-                            extended_area: row.get("alert_extended_area"),
-                            level: row.get("alert_level"),
+                            area_level2: row.get("alert_area_level2"),
+                            area_level3: row.get("alert_area_level3"),
+                            text1: row.get("alert_text1"),
+                            text2: row.get("alert_text2"),
+                            text3: row.get("alert_text3"),
                             reached_users: row.get("alert_reached_users"),
                         },
                         position: Position {
@@ -267,6 +329,7 @@ pub mod mutations {
                             moving_activity: row.get("position_activity"),
                         },
                         seen: row.get("seen"),
+                        level: row.get("level"),
                         created_at: row.get::<_, f64>("created_at") as i64,
                     })
                     .collect::<Vec<Notification>>()
