@@ -9,6 +9,7 @@ use crate::{
 };
 use async_graphql::{Context, FieldResult, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Serialize, Deserialize)]
 pub struct PolygonValid {
@@ -131,10 +132,6 @@ pub mod query {
 }
 
 pub mod mutations {
-    use std::str::FromStr;
-
-    use crate::graphql::types::position;
-
     use super::*;
 
     /// Create a new alert
