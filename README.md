@@ -29,6 +29,9 @@ Now you set up some env variables:
 
 - `EXPO_ACCESS_TOKEN`: used by the [Expo](https://expo.dev) API access.
 
+- `UNREALSPEECH_TOKEN`: used by [Unrealspeech](https://unrealspeech.com) for
+  text-to-speach API.
+
 After that you must copy the `schema/init.sql` file into the database.
 
 Now just run the app
@@ -64,6 +67,7 @@ docker run \
     -e JWT_SECRET=... \
     -e ALLOWED_HOST=... \
     -e EXPO_ACCESS_TOKEN ... \
+    -e UNREALSPEECH_TOKEN ... \
     cas:latest
 ```
 

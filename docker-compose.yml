@@ -27,6 +27,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ALLOWED_HOST=${ALLOWED_HOST}
       - EXPO_ACCESS_TOKEN=${EXPO_ACCESS_TOKEN}
+      - UNREALSPEECH_TOKEN=${UNREALSPEECH_TOKEN}
 
     depends_on:
       - postgres

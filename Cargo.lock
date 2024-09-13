@@ -420,6 +420,7 @@ dependencies = [
  "lazy_static",
  "once_cell",
  "postgis",
+ "reqwest",
  "serde",
  "serde_json",
  "sha256",

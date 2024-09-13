@@ -132,6 +132,8 @@ pub mod query {
 }
 
 pub mod mutations {
+    use crate::audio;
+
     use super::*;
 
     /// Create a new alert
@@ -329,6 +331,44 @@ pub mod mutations {
                     )
                     .await
                     .unwrap();
+
+                if let Err(e) = audio::tts(
+                    alert.text1.clone(),
+                    format!("alert-{}-text-1.mp3", alert.id),
+                )
+                .await
+                {
+                    eprintln!(
+                        "Error for `{}`: {}",
+                        format!("alert-{}-text-1.mp3", alert.id),
+                        e
+                    );
+                }
+
+                if let Err(e) = audio::tts(
+                    alert.text2.clone(),
+                    format!("alert-{}-text-2.mp3", alert.id),
+                )
+                .await
+                {
+                    eprintln!(
+                        "Error for `{}`: {}",
+                        format!("alert-{}-text-2.mp3", alert.id),
+                        e
+                    );
+                }
+                if let Err(e) = audio::tts(
+                    alert.text3.clone(),
+                    format!("alert-{}-text-3.mp3", alert.id),
+                )
+                .await
+                {
+                    eprintln!(
+                        "Error for `{}`: {}",
+                        format!("alert-{}-text-3.mp3", alert.id),
+                        e
+                    );
+                }
 
                 Ok(alert)
             }

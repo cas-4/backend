@@ -19,6 +19,9 @@ pub struct Configuration {
 
     /// Token used by Expo API to send a notification
     pub expo_access_token: String,
+
+    /// Token used for text-to-speach API
+    pub unrealspeech_token: String,
 }
 
 impl Configuration {

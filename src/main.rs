@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+mod audio;
 mod config;
 mod db;
 mod errors;
@@ -13,7 +14,7 @@ use crate::config::CONFIG;
 use async_graphql::{EmptySubscription, Schema};
 use axum::{
     http::{header, Method, Request},
-    routing::post,
+    routing::{get, post},
     Extension, Router,
 };
 use tokio::net::TcpListener;
@@ -45,6 +46,7 @@ async fn create_app() -> Router {
     .finish();
 
     Router::new()
+        .route("/assets/sounds/:id", get(audio::show_file))
         .route(
             "/graphql",
             post(graphql::routes::graphql_handler).layer(Extension(schema.clone())),

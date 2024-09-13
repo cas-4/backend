@@ -37,6 +37,11 @@ spec:
                 secretKeyRef:
                   name: cas-secret
                   key: EXPO_ACCESS_TOKEN
+            - name: UNREALSPEECH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cas-secret
+                  key: UNREALSPEECH_TOKEN
             - name: ALLOWED_HOST
               valueFrom:
                 configMapKeyRef:
