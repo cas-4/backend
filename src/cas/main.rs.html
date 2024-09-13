@@ -94,8 +94,11 @@
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
 </pre></div><pre class="rust"><code><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
-</span><span class="kw">mod </span>config;
+</span><span class="kw">mod </span>audio;
+<span class="kw">mod </span>config;
 <span class="kw">mod </span>db;
 <span class="kw">mod </span>errors;
 <span class="kw">mod </span>expo;
@@ -109,7 +112,7 @@
 <span class="kw">use </span>async_graphql::{EmptySubscription, Schema};
 <span class="kw">use </span>axum::{
     http::{header, Method, Request},
-    routing::post,
+    routing::{get, post},
     Extension, Router,
 };
 <span class="kw">use </span>tokio::net::TcpListener;
@@ -141,6 +144,7 @@
     .finish();
 
     Router::new()
+        .route(<span class="string">"/assets/sounds/:id"</span>, get(audio::show_file))
         .route(
             <span class="string">"/graphql"</span>,
             post(graphql::routes::graphql_handler).layer(Extension(schema.clone())),
