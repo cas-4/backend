@@ -80,11 +80,9 @@ docker compose up
 ### Kubernetes
 
 If you do not want to use Docker or Docker compose directly, you can use a
-Kubernetes cluster like [MiniKube](https://minikube.sigs.k8s.io/docs/).
-
-```text
-./scripts/k8s (apply|delete)
-```
+Kubernetes cluster like [MiniKube](https://minikube.sigs.k8s.io/docs/) and
+follow the istructions available at
+[github.com/cas-4/network](https://github.com/cas-4/network).
 
 ## Documentation
 
