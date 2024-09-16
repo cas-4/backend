@@ -338,7 +338,7 @@ pub mod mutations {
                 )
                 .await
                 {
-                    eprintln!(
+                    tracing::error!(
                         "Error for `{}`: {}",
                         format!("alert-{}-text-1.mp3", alert.id),
                         e
@@ -351,7 +351,7 @@ pub mod mutations {
                 )
                 .await
                 {
-                    eprintln!(
+                    tracing::error!(
                         "Error for `{}`: {}",
                         format!("alert-{}-text-2.mp3", alert.id),
                         e
@@ -363,7 +363,7 @@ pub mod mutations {
                 )
                 .await
                 {
-                    eprintln!(
+                    tracing::error!(
                         "Error for `{}`: {}",
                         format!("alert-{}-text-3.mp3", alert.id),
                         e

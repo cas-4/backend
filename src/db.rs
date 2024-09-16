@@ -11,7 +11,7 @@ pub async fn setup() -> Result<Client, AppError> {
     // Spawn a new task to run the connection to the database
     tokio::spawn(async move {
         if let Err(e) = connection.await {
-            eprintln!("Database connection error: {}", e);
+            tracing::error!("Database connection error: {}", e);
         }
     });
 

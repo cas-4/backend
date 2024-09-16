@@ -110,7 +110,7 @@ where
                                 AppError::InvalidToken
                             }
                             _ => {
-                                eprintln!("{err:?}");
+                                tracing::error!("{err:?}");
                                 AppError::Unauthorized
                             }
                         })?;
