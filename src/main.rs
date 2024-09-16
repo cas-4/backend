@@ -17,6 +17,7 @@ use axum::{
     routing::{get, post},
     Extension, Router,
 };
+use errors::AppError;
 use tokio::net::TcpListener;
 use tower_http::{
     classify::ServerErrorsFailureClass,
@@ -28,10 +29,10 @@ use tower_http::{
 use tracing::Span;
 
 /// Create the app: setup everything and returns a `Router`
-async fn create_app() -> Router {
+async fn create_app() -> Result<Router, AppError> {
     logger::setup();
     expo::setup(CONFIG.expo_access_token.clone());
-    let dbclient = db::setup().await.unwrap();
+    let dbclient = db::setup().await?;
 
     let state = state::AppState {
         client: Arc::new(dbclient),
@@ -45,7 +46,7 @@ async fn create_app() -> Router {
     .data(state.clone())
     .finish();
 
-    Router::new()
+    Ok(Router::new()
         .route("/assets/sounds/:id", get(audio::show_file))
         .route(
             "/graphql",
@@ -75,24 +76,26 @@ async fn create_app() -> Router {
                 .allow_headers(vec![header::CONTENT_TYPE, header::AUTHORIZATION])
                 .allow_origin(Any),
         )
-        .layer(Extension(state))
+        .layer(Extension(state)))
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let app = create_app().await;
+    if let Ok(app) = create_app().await {
+        let host = &CONFIG.allowed_host;
 
-    let host = &CONFIG.allowed_host;
+        let addr = match host.parse::<SocketAddr>() {
+            Ok(addr) => addr,
+            Err(e) => {
+                panic!("`{}` {}", host, e);
+            }
+        };
+        tracing::info!("Listening on {}", addr);
 
-    let addr = match host.parse::<SocketAddr>() {
-        Ok(addr) => addr,
-        Err(e) => {
-            panic!("`{}` {}", host, e);
-        }
-    };
-    tracing::info!("Listening on {}", addr);
-
-    axum::serve(TcpListener::bind(&addr).await.unwrap(), app)
-        .await
-        .unwrap();
+        axum::serve(TcpListener::bind(&addr).await.unwrap(), app)
+            .await
+            .unwrap();
+    } else {
+        tracing::error!("Can't create an application!");
+    }
 }

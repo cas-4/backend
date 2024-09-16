@@ -139,12 +139,12 @@ pub mod query {
 
         // Optional offset results. It should be used with limit field.
         offset: Option<i64>,
-    ) -> Result<Option<Vec<Notification>>, String> {
+    ) -> Result<Option<Vec<Notification>>, AppError> {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err("Unauthorized".to_string()),
+            Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(claims) => {
                 let claim_user = find_user(client, claims.user_id)
                     .await
@@ -196,29 +196,25 @@ pub mod query {
                         .query(&format!(
                             "{base_query} AND n.alert_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3",
                         ), &[&ida, &limit, &offset])
-                        .await
-                        .unwrap(),
+                        .await?,
                 Some (ida) =>
                     client
                     .query(&format!(
                         "{base_query} AND p.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
                     ), &[&claim_user.id, &ida, &limit, &offset])
-                    .await
-                    .unwrap(),
+                    .await?,
                 None if claim_user.is_admin => client
                     .query(
                         &format!("{base_query} ORDER BY n.id DESC LIMIT $1 OFFSET $2"),
                         &[&limit, &offset],
                     )
-                    .await
-                    .unwrap(),
+                    .await?,
                 None =>
                     client.query(
                         &format!("{base_query} AND p.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
                         &[&claim_user.id, &limit, &offset],
                     )
-                    .await
-                    .unwrap(),
+                    .await?,
             };
 
                 let notifications: Vec<Notification> = rows
@@ -267,9 +263,9 @@ pub mod mutations {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
 
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err(async_graphql::Error::new("Can't find the owner")),
+            Authentication::NotLogged => Err(AppError::NotFound("Owner".to_string()).into()),
             Authentication::Logged(claims) => {
                 let user = find_user(client, claims.user_id)
                     .await
@@ -303,8 +299,7 @@ pub mod mutations {
                         WHERE n.id = $1
                         ",
                        &[&input.id])
-                    .await
-                    .unwrap()
+                    .await?
                     .iter()
                     .map(|row| Notification {
                         id: row.get("id"),
@@ -335,10 +330,10 @@ pub mod mutations {
                     .collect::<Vec<Notification>>()
                     .first()
                     .cloned()
-                    .ok_or_else(|| async_graphql::Error::new("Failed to get notification"))?;
+                    .ok_or_else(|| AppError::NotFound("Notification".to_string()))?;
 
                 if notification.position.user_id != user.id {
-                    return Err(async_graphql::Error::new("Not found"));
+                    return Err(AppError::NotFound("Notification".to_string()).into());
                 }
 
                 client
@@ -346,8 +341,7 @@ pub mod mutations {
                         "UPDATE notifications SET seen = $1 WHERE id = $2",
                         &[&input.seen, &input.id],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                 Ok(notification)
             }

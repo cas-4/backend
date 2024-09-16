@@ -107,19 +107,19 @@ pub mod query {
         limit: Option<i64>,
         // Optional offset results. It should be used with limit field.
         offset: Option<i64>,
-    ) -> Result<Option<Vec<User>>, String> {
+    ) -> Result<Option<Vec<User>>, AppError> {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err("Unauthorized".to_string()),
+            Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(claims) => {
                 let claim_user = find_user(client, claims.user_id)
                     .await
                     .expect("Should not be here");
 
                 if !claim_user.is_admin {
-                    return Err("Unauthorized".to_string());
+                    return Err(AppError::Unauthorized);
                 }
 
                 let rows = client
@@ -127,8 +127,7 @@ pub mod query {
                         "SELECT id, email, name, address, is_admin FROM users LIMIT $1 OFFSET $2",
                         &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                 let users: Vec<User> = rows
                     .iter()
@@ -149,12 +148,12 @@ pub mod query {
     }
 
     /// Get users from the database
-    pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, String> {
+    pub async fn get_user_by_id<'ctx>(ctx: &Context<'ctx>, id: i32) -> Result<User, AppError> {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err("Unauthorized".to_string()),
+            Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(claims) => {
                 let claim_user = find_user(client, claims.user_id)
                     .await
@@ -168,10 +167,9 @@ pub mod query {
                             WHERE id = $1",
                             &[&id],
                         )
-                        .await
-                        .unwrap();
+                        .await?;
                 } else if claims.user_id != id {
-                    return Err("Unauthorized".to_string());
+                    return Err(AppError::Unauthorized);
                 } else {
                     rows = client
                         .query(
@@ -179,8 +177,7 @@ pub mod query {
                             WHERE id = $1",
                             &[&claims.user_id],
                         )
-                        .await
-                        .unwrap();
+                        .await?;
                 }
 
                 let users: Vec<User> = rows
@@ -197,7 +194,7 @@ pub mod query {
                     .collect();
 
                 if users.is_empty() {
-                    return Err("Not found".to_string());
+                    return Err(AppError::NotFound("User".to_string()));
                 }
 
                 Ok(users[0].clone())
@@ -217,7 +214,7 @@ pub mod mutations {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
 
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
             Authentication::NotLogged => Err(Error::new("Can't find the owner")),
             Authentication::Logged(claims) => {
@@ -230,8 +227,7 @@ pub mod mutations {
                         "UPDATE users SET notification_token = $1 WHERE id = $2",
                         &[&input.token, &claims.user_id],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                 Ok(user)
             }
@@ -247,7 +243,7 @@ pub mod mutations {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
 
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
             Authentication::NotLogged => Err(Error::new("Can't find the owner")),
             Authentication::Logged(claims) => {
@@ -268,8 +264,7 @@ pub mod mutations {
                         "UPDATE users SET email = $1, name = $2, address = $3 WHERE id = $4",
                         &[&input.email, &input.name, &input.address, &id],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                 let user = find_user(client, claims.user_id)
                     .await
@@ -288,7 +283,7 @@ pub mod mutations {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
 
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
             Authentication::NotLogged => Err(Error::new("Can't find the owner")),
             Authentication::Logged(claims) => {
@@ -310,8 +305,7 @@ pub mod mutations {
                         "UPDATE users SET password = $1 WHERE id = $2",
                         &[&password, &user.id],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                 Ok(user)
             }

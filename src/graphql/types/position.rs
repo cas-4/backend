@@ -1,10 +1,12 @@
-use crate::{graphql::types::jwt::Authentication, state::AppState};
+use crate::{
+    errors::AppError,
+    graphql::types::{jwt::Authentication, user::find_user},
+    state::AppState,
+};
 use async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
-
-use super::user::find_user;
 
 #[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 /// Enumeration which refers to the kind of moving activity
@@ -96,14 +98,17 @@ pub mod query {
 
         // Optional offset results. It should be used with limit field.
         offset: Option<i64>,
-    ) -> Result<Option<Vec<Position>>, String> {
+    ) -> Result<Option<Vec<Position>>, AppError> {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err("Unauthorized".to_string()),
+            Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(claims) => {
                 let rows;
+                let limit = limit.unwrap_or(20);
+                let offset = offset.unwrap_or(0);
+
                 let claim_user = find_user(client, claims.user_id)
                     .await
                     .expect("Should not be here");
@@ -118,7 +123,7 @@ pub mod query {
                             ORDER BY id DESC
                             LIMIT $2
                             OFFSET $3",
-                            &[&id, &limit.unwrap_or(20), &offset.unwrap_or(0)]).await.unwrap();
+                            &[&id, &limit, &offset]).await?;
                         }
                         None => {
                             rows = client.query("
@@ -127,7 +132,7 @@ pub mod query {
                             ORDER BY id DESC
                             LIMIT $1
                             OFFSET $2",
-                            &[&limit.unwrap_or(20), &offset.unwrap_or(0)]).await.unwrap();
+                            &[&limit, &offset]).await?;
                         }
                     }
                 } else {
@@ -138,7 +143,7 @@ pub mod query {
                     ORDER BY id DESC
                     LIMIT $2
                     OFFSET $3",
-                    &[&claim_user.id, &limit.unwrap_or(20), &offset.unwrap_or(0)]).await.unwrap();
+                    &[&claim_user.id, &limit, &offset]).await?;
                 }
 
                 let positions: Vec<Position> = rows
@@ -165,19 +170,19 @@ pub mod query {
 
         // Optional filter by moving activity
         moving_activity: Option<MovingActivity>,
-    ) -> Result<Option<Vec<Position>>, String> {
+    ) -> Result<Option<Vec<Position>>, AppError> {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err("Unauthorized".to_string()),
+            Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(claims) => {
                 let claim_user = find_user(client, claims.user_id)
                     .await
                     .expect("Should not be here");
 
                 if !claim_user.is_admin {
-                    return Err("Unauthorized".to_string());
+                    return Err(AppError::Unauthorized);
                 }
 
                 let rows = client
@@ -187,8 +192,7 @@ pub mod query {
                             FROM positions ORDER BY user_id, created_at DESC",
                             &[],
                         )
-                        .await
-                        .unwrap();
+                        .await?;
 
                 let positions: Vec<Position> = match moving_activity {
                     Some(activity) => rows
@@ -233,9 +237,11 @@ pub mod mutations {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
 
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err(async_graphql::Error::new("Can't find the owner")),
+            Authentication::NotLogged => {
+                Err(AppError::NotFound("Can't find the owner".to_string()).into())
+            }
             Authentication::Logged(claims) => {
                 let rows = client
                     .query(
@@ -254,8 +260,7 @@ pub mod mutations {
                             &input.moving_activity,
                         ],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                 let positions: Vec<Position> = rows
                     .iter()

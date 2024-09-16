@@ -6,7 +6,7 @@ use tokio_postgres::{Client, NoTls};
 pub async fn setup() -> Result<Client, AppError> {
     let database_url = &crate::config::CONFIG.database_url;
 
-    let (client, connection) = tokio_postgres::connect(database_url, NoTls).await.unwrap();
+    let (client, connection) = tokio_postgres::connect(database_url, NoTls).await?;
 
     // Spawn a new task to run the connection to the database
     tokio::spawn(async move {

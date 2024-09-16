@@ -1,4 +1,4 @@
-use crate::graphql::types::*;
+use crate::{errors::AppError, graphql::types::*};
 use async_graphql::{Context, Object};
 
 /// Query struct
@@ -25,7 +25,7 @@ impl Query {
         ctx: &Context<'ctx>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
-    ) -> Result<Option<Vec<user::User>>, String> {
+    ) -> Result<Option<Vec<user::User>>, AppError> {
         user::query::get_users(ctx, limit, offset).await
     }
 
@@ -42,7 +42,7 @@ impl Query {
         &self,
         ctx: &Context<'ctx>,
         #[graphql(desc = "User to find")] id: i32,
-    ) -> Result<user::User, String> {
+    ) -> Result<user::User, AppError> {
         user::query::get_user_by_id(ctx, id).await
     }
 
@@ -61,7 +61,7 @@ impl Query {
         #[graphql(desc = "Filter by user id")] user_id: Option<i32>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
-    ) -> Result<Option<Vec<position::Position>>, String> {
+    ) -> Result<Option<Vec<position::Position>>, AppError> {
         position::query::get_positions(ctx, user_id, limit, offset).await
     }
 
@@ -81,7 +81,7 @@ impl Query {
         #[graphql(desc = "Filter by moving activity")] moving_activity: Option<
             position::MovingActivity,
         >,
-    ) -> Result<Option<Vec<position::Position>>, String> {
+    ) -> Result<Option<Vec<position::Position>>, AppError> {
         position::query::last_positions(ctx, moving_activity).await
     }
 
@@ -100,7 +100,7 @@ impl Query {
         #[graphql(desc = "Filter by ID")] id: Option<i32>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
-    ) -> Result<Option<Vec<alert::Alert>>, String> {
+    ) -> Result<Option<Vec<alert::Alert>>, AppError> {
         alert::query::get_alerts(ctx, id, limit, offset).await
     }
 
@@ -128,7 +128,7 @@ impl Query {
         #[graphql(desc = "Filter by alert ID")] alert_id: Option<i32>,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,
-    ) -> Result<Option<Vec<notification::Notification>>, String> {
+    ) -> Result<Option<Vec<notification::Notification>>, AppError> {
         notification::query::get_notifications(ctx, seen, id, alert_id, limit, offset).await
     }
 }

@@ -1,3 +1,5 @@
+use core::fmt;
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -64,5 +66,33 @@ impl From<std::string::String> for AppError {
 impl From<std::io::Error> for AppError {
     fn from(error: std::io::Error) -> Self {
         AppError::BadRequest(error.to_string())
+    }
+}
+
+/// Implementation of the `{}` marker for AppError
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AppError::Database => write!(f, "Database"),
+            AppError::BadRequest(value) => write!(f, "BadRequest: {}", value),
+            AppError::NotFound(value) => write!(f, "Not found: {}", value),
+            AppError::TokenCreation => write!(f, "Token creation"),
+            AppError::InvalidToken => write!(f, "Invalid Token"),
+            AppError::Unauthorized => write!(f, "Unauthorized"),
+        }
+    }
+}
+
+/// A tokio_postgres error is mapped to an `AppError::Database`
+impl From<tokio_postgres::Error> for AppError {
+    fn from(_: tokio_postgres::Error) -> Self {
+        AppError::Database
+    }
+}
+
+/// A async_graphql error is mapped to an `AppError::BadRequest`
+impl From<async_graphql::Error> for AppError {
+    fn from(value: async_graphql::Error) -> Self {
+        AppError::BadRequest(value.message)
     }
 }

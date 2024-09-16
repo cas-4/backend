@@ -139,14 +139,13 @@ pub mod mutations {
                 "SELECT id FROM users WHERE email = $1 AND password = $2",
                 &[&input.email, &password],
             )
-            .await
-            .unwrap();
+            .await?;
 
         let id: Vec<i32> = rows.iter().map(|row| row.get(0)).collect();
         if id.len() == 1 {
             // Create a new claim using the found ID
             let claims = Claims::new(id[0]);
-            let token = claims.get_token().unwrap();
+            let token = claims.get_token()?;
             Ok(AuthBody::new(token, id[0]))
         } else {
             Err(Error::new("Invalid email or password"))

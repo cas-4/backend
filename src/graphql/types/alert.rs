@@ -1,4 +1,5 @@
 use crate::{
+    errors::AppError,
     expo,
     graphql::types::{
         jwt::Authentication,
@@ -61,17 +62,18 @@ pub mod query {
 
         // Optional offset results. It should be used with limit field.
         offset: Option<i64>,
-    ) -> Result<Option<Vec<Alert>>, String> {
+    ) -> Result<Option<Vec<Alert>>, AppError> {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err("Unauthorized".to_string()),
+            Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(_) => {
                 let rows = match id {
-                    Some(id) => client
-                        .query(
-                            "SELECT id,
+                    Some(id) => {
+                        client
+                            .query(
+                                "SELECT id,
                             user_id,
                             extract(epoch from created_at)::double precision as created_at,
                             ST_AsText(area) as area,
@@ -83,13 +85,14 @@ pub mod query {
                             reached_users
                     FROM alerts
                     WHERE id = $1",
-                            &[&id],
-                        )
-                        .await
-                        .unwrap(),
-                    None => client
-                        .query(
-                            "SELECT id,
+                                &[&id],
+                            )
+                            .await?
+                    }
+                    None => {
+                        client
+                            .query(
+                                "SELECT id,
                         user_id,
                         extract(epoch from created_at)::double precision as created_at,
                         ST_AsText(area) as area,
@@ -103,10 +106,10 @@ pub mod query {
                     ORDER BY id DESC
                     LIMIT $1
                     OFFSET $2",
-                            &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
-                        )
-                        .await
-                        .unwrap(),
+                                &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
+                            )
+                            .await?
+                    }
                 };
 
                 let alerts: Vec<Alert> = rows
@@ -141,13 +144,13 @@ pub mod mutations {
         let state = ctx.data::<AppState>().expect("Can't connect to db");
         let client = &*state.client;
 
-        let auth: &Authentication = ctx.data().unwrap();
+        let auth: &Authentication = ctx.data()?;
         match auth {
-            Authentication::NotLogged => Err(async_graphql::Error::new("Can't find the owner")),
+            Authentication::NotLogged => Err(AppError::NotFound("Owner".to_string()).into()),
             Authentication::Logged(claims) => {
-                let claim_user = find_user(client, claims.user_id).await.unwrap();
+                let claim_user = find_user(client, claims.user_id).await?;
                 if !claim_user.is_admin {
-                    return Err(async_graphql::Error::new("Unauthorized"));
+                    return Err(AppError::Unauthorized.into());
                 }
 
                 let points: String = input
@@ -165,19 +168,16 @@ pub mod mutations {
                 let polygon = format!("ST_MakePolygon(ST_MakeLine(ARRAY[{}]))", points);
 
                 let valid_query = format!("SELECT ST_IsValid({}) as is_valid", polygon);
-                let rows;
-                match client.query(&valid_query, &[]).await {
-                    Ok(r) => {
-                        rows = r;
-                    }
+                let rows = match client.query(&valid_query, &[]).await {
+                    Ok(r) => r,
                     Err(_) => {
-                        return Err(async_graphql::Error::new("Polygon is not valid"));
+                        return Err(AppError::BadRequest("Polygon is not valid".to_string()).into());
                     }
                 };
 
                 let is_valid: bool = rows[0].get("is_valid");
                 if !is_valid {
-                    return Err(async_graphql::Error::new("Polygon is not valid"));
+                    return Err(AppError::BadRequest("Polygon is not valid".to_string()).into());
                 }
 
                 let insert_query = format!(
@@ -198,8 +198,7 @@ pub mod mutations {
                         &insert_query,
                         &[&claims.user_id, &input.text1, &input.text2, &input.text3],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
                 let mut alert = rows
                     .iter()
                     .map(|row| Alert {
@@ -217,7 +216,7 @@ pub mod mutations {
                     .collect::<Vec<Alert>>()
                     .first()
                     .cloned()
-                    .ok_or_else(|| async_graphql::Error::new("Failed to create alert"))?;
+                    .ok_or_else(|| AppError::BadRequest("Failed to create alert".to_string()))?;
 
                 struct Level<'a> {
                     text: &'a str,
@@ -259,8 +258,7 @@ pub mod mutations {
                             )",
                             &[&alert.id, &level.distance],
                         )
-                        .await
-                        .unwrap()
+                        .await?
                         .iter()
                         .map(|row| row.get(0))
                         .filter(|id| !positions.contains(id))
@@ -274,8 +272,7 @@ pub mod mutations {
                             *id,
                             LevelAlert::from_str(level.text).unwrap(),
                         )
-                        .await
-                        .unwrap();
+                        .await?;
                         notification_ids.push(notification);
                     }
 
@@ -284,7 +281,7 @@ pub mod mutations {
                         .map(|i| format!("${}", i))
                         .collect();
 
-                    if placeholders.len() > 0 {
+                    if !placeholders.is_empty() {
                         let query = format!(
                             "SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
                             WHERE p.id IN ({}) AND notification_token IS NOT NULL",
@@ -299,8 +296,7 @@ pub mod mutations {
                                     .map(|id| id as &(dyn tokio_postgres::types::ToSql + Sync))
                                     .collect::<Vec<&(dyn tokio_postgres::types::ToSql + Sync)>>(),
                             )
-                            .await
-                            .unwrap()
+                            .await?
                             .iter()
                             .map(|row| {
                                 format!("ExponentPushToken[{}]", row.get::<usize, String>(0))
@@ -317,8 +313,7 @@ pub mod mutations {
                                 _ => "Check it out in app!".to_string(),
                             },
                         )
-                        .await
-                        .unwrap();
+                        .await?;
                     }
 
                     positions.extend(position_ids);
@@ -329,8 +324,7 @@ pub mod mutations {
                         "UPDATE alerts SET reached_users = $1 WHERE id = $2",
                         &[&alert.reached_users, &alert.id],
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                 if let Err(e) = audio::tts(
                     alert.text1.clone(),
