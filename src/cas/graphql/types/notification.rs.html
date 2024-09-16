@@ -348,12 +348,6 @@
 <a href="#348" id="348">348</a>
 <a href="#349" id="349">349</a>
 <a href="#350" id="350">350</a>
-<a href="#351" id="351">351</a>
-<a href="#352" id="352">352</a>
-<a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a>
-<a href="#355" id="355">355</a>
-<a href="#356" id="356">356</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
@@ -495,12 +489,12 @@
 
         <span class="comment">// Optional offset results. It should be used with limit field.
         </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Notification&gt;&gt;, String&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Notification&gt;&gt;, AppError&gt; {
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
                     .<span class="kw">await
@@ -552,29 +546,25 @@
                         .query(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
                             <span class="string">"{base_query} AND n.alert_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"</span>,
                         ), <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>ida, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset])
-                        .<span class="kw">await
-                        </span>.unwrap(),
+                        .<span class="kw">await</span><span class="question-mark">?</span>,
                 <span class="prelude-val">Some </span>(ida) =&gt;
                     client
                     .query(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
                         <span class="string">"{base_query} AND p.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4"</span>,
                     ), <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>ida, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset])
-                    .<span class="kw">await
-                    </span>.unwrap(),
+                    .<span class="kw">await</span><span class="question-mark">?</span>,
                 <span class="prelude-val">None </span><span class="kw">if </span>claim_user.is_admin =&gt; client
                     .query(
                         <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{base_query} ORDER BY n.id DESC LIMIT $1 OFFSET $2"</span>),
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap(),
+                    .<span class="kw">await</span><span class="question-mark">?</span>,
                 <span class="prelude-val">None </span>=&gt;
                     client.query(
                         <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{base_query} AND p.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"</span>),
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap(),
+                    .<span class="kw">await</span><span class="question-mark">?</span>,
             };
 
                 <span class="kw">let </span>notifications: Vec&lt;Notification&gt; = rows
@@ -623,9 +613,9 @@
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
 
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Can't find the owner"</span>)),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::NotFound(<span class="string">"Owner"</span>.to_string()).into()),
             Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>user = find_user(client, claims.user_id)
                     .<span class="kw">await
@@ -659,9 +649,8 @@
                         WHERE n.id = $1
                         "</span>,
                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>input.id])
-                    .<span class="kw">await
-                    </span>.unwrap()
-                    .iter()
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.iter()
                     .map(|row| Notification {
                         id: row.get(<span class="string">"id"</span>),
                         alert: Alert {
@@ -691,10 +680,10 @@
                     .collect::&lt;Vec&lt;Notification&gt;&gt;()
                     .first()
                     .cloned()
-                    .ok_or_else(|| async_graphql::Error::new(<span class="string">"Failed to get notification"</span>))<span class="question-mark">?</span>;
+                    .ok_or_else(|| AppError::NotFound(<span class="string">"Notification"</span>.to_string()))<span class="question-mark">?</span>;
 
                 <span class="kw">if </span>notification.position.user_id != user.id {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Not found"</span>));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::NotFound(<span class="string">"Notification"</span>.to_string()).into());
                 }
 
                 client
@@ -702,8 +691,7 @@
                         <span class="string">"UPDATE notifications SET seen = $1 WHERE id = $2"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>input.seen, <span class="kw-2">&amp;</span>input.id],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="prelude-val">Ok</span>(notification)
             }

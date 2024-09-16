@@ -312,12 +312,6 @@
 <a href="#312" id="312">312</a>
 <a href="#313" id="313">313</a>
 <a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-<a href="#320" id="320">320</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{errors::AppError, state::AppState};
 <span class="kw">use </span>async_graphql::{Context, Error, FieldResult, InputObject, Object};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -427,19 +421,19 @@
         </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
         <span class="comment">// Optional offset results. It should be used with limit field.
         </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;User&gt;&gt;, String&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;User&gt;&gt;, AppError&gt; {
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
                     .<span class="kw">await
                     </span>.expect(<span class="string">"Should not be here"</span>);
 
                 <span class="kw">if </span>!claim_user.is_admin {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string());
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::Unauthorized);
                 }
 
                 <span class="kw">let </span>rows = client
@@ -447,8 +441,7 @@
                         <span class="string">"SELECT id, email, name, address, is_admin FROM users LIMIT $1 OFFSET $2"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">let </span>users: Vec&lt;User&gt; = rows
                     .iter()
@@ -469,12 +462,12 @@
     }
 
     <span class="doccomment">/// Get users from the database
-    </span><span class="kw">pub async fn </span>get_user_by_id&lt;<span class="lifetime">'ctx</span>&gt;(ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;, id: i32) -&gt; <span class="prelude-ty">Result</span>&lt;User, String&gt; {
+    </span><span class="kw">pub async fn </span>get_user_by_id&lt;<span class="lifetime">'ctx</span>&gt;(ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;, id: i32) -&gt; <span class="prelude-ty">Result</span>&lt;User, AppError&gt; {
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
                     .<span class="kw">await
@@ -488,10 +481,9 @@
                             WHERE id = $1"</span>,
                             <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
                         )
-                        .<span class="kw">await
-                        </span>.unwrap();
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
                 } <span class="kw">else if </span>claims.user_id != id {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string());
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::Unauthorized);
                 } <span class="kw">else </span>{
                     rows = client
                         .query(
@@ -499,8 +491,7 @@
                             WHERE id = $1"</span>,
                             <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claims.user_id],
                         )
-                        .<span class="kw">await
-                        </span>.unwrap();
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
                 }
 
                 <span class="kw">let </span>users: Vec&lt;User&gt; = rows
@@ -517,7 +508,7 @@
                     .collect();
 
                 <span class="kw">if </span>users.is_empty() {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Not found"</span>.to_string());
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::NotFound(<span class="string">"User"</span>.to_string()));
                 }
 
                 <span class="prelude-val">Ok</span>(users[<span class="number">0</span>].clone())
@@ -537,7 +528,7 @@
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
 
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
             Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(Error::new(<span class="string">"Can't find the owner"</span>)),
             Authentication::Logged(claims) =&gt; {
@@ -550,8 +541,7 @@
                         <span class="string">"UPDATE users SET notification_token = $1 WHERE id = $2"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>input.token, <span class="kw-2">&amp;</span>claims.user_id],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="prelude-val">Ok</span>(user)
             }
@@ -567,7 +557,7 @@
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
 
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
             Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(Error::new(<span class="string">"Can't find the owner"</span>)),
             Authentication::Logged(claims) =&gt; {
@@ -588,8 +578,7 @@
                         <span class="string">"UPDATE users SET email = $1, name = $2, address = $3 WHERE id = $4"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>input.email, <span class="kw-2">&amp;</span>input.name, <span class="kw-2">&amp;</span>input.address, <span class="kw-2">&amp;</span>id],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">let </span>user = find_user(client, claims.user_id)
                     .<span class="kw">await
@@ -608,7 +597,7 @@
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
 
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
             Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(Error::new(<span class="string">"Can't find the owner"</span>)),
             Authentication::Logged(claims) =&gt; {
@@ -630,8 +619,7 @@
                         <span class="string">"UPDATE users SET password = $1 WHERE id = $2"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>user.id],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="prelude-val">Ok</span>(user)
             }

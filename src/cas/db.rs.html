@@ -25,7 +25,7 @@
 </span><span class="kw">pub async fn </span>setup() -&gt; <span class="prelude-ty">Result</span>&lt;Client, AppError&gt; {
     <span class="kw">let </span>database_url = <span class="kw-2">&amp;</span><span class="kw">crate</span>::config::CONFIG.database_url;
 
-    <span class="kw">let </span>(client, connection) = tokio_postgres::connect(database_url, NoTls).<span class="kw">await</span>.unwrap();
+    <span class="kw">let </span>(client, connection) = tokio_postgres::connect(database_url, NoTls).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Spawn a new task to run the connection to the database
     </span>tokio::spawn(<span class="kw">async move </span>{

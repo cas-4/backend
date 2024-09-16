@@ -369,13 +369,8 @@
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
-<a href="#372" id="372">372</a>
-<a href="#373" id="373">373</a>
-<a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+    errors::AppError,
     expo,
     graphql::types::{
         jwt::Authentication,
@@ -438,17 +433,18 @@
 
         <span class="comment">// Optional offset results. It should be used with limit field.
         </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Alert&gt;&gt;, String&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Alert&gt;&gt;, AppError&gt; {
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(<span class="kw">_</span>) =&gt; {
                 <span class="kw">let </span>rows = <span class="kw">match </span>id {
-                    <span class="prelude-val">Some</span>(id) =&gt; client
-                        .query(
-                            <span class="string">"SELECT id,
+                    <span class="prelude-val">Some</span>(id) =&gt; {
+                        client
+                            .query(
+                                <span class="string">"SELECT id,
                             user_id,
                             extract(epoch from created_at)::double precision as created_at,
                             ST_AsText(area) as area,
@@ -460,13 +456,14 @@
                             reached_users
                     FROM alerts
                     WHERE id = $1"</span>,
-                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
-                        )
-                        .<span class="kw">await
-                        </span>.unwrap(),
-                    <span class="prelude-val">None </span>=&gt; client
-                        .query(
-                            <span class="string">"SELECT id,
+                                <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
+                            )
+                            .<span class="kw">await</span><span class="question-mark">?
+                    </span>}
+                    <span class="prelude-val">None </span>=&gt; {
+                        client
+                            .query(
+                                <span class="string">"SELECT id,
                         user_id,
                         extract(epoch from created_at)::double precision as created_at,
                         ST_AsText(area) as area,
@@ -480,10 +477,10 @@
                     ORDER BY id DESC
                     LIMIT $1
                     OFFSET $2"</span>,
-                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)],
-                        )
-                        .<span class="kw">await
-                        </span>.unwrap(),
+                                <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)],
+                            )
+                            .<span class="kw">await</span><span class="question-mark">?
+                    </span>}
                 };
 
                 <span class="kw">let </span>alerts: Vec&lt;Alert&gt; = rows
@@ -518,13 +515,13 @@
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
 
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Can't find the owner"</span>)),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::NotFound(<span class="string">"Owner"</span>.to_string()).into()),
             Authentication::Logged(claims) =&gt; {
-                <span class="kw">let </span>claim_user = find_user(client, claims.user_id).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>claim_user = find_user(client, claims.user_id).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">if </span>!claim_user.is_admin {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Unauthorized"</span>));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::Unauthorized.into());
                 }
 
                 <span class="kw">let </span>points: String = input
@@ -542,19 +539,16 @@
                 <span class="kw">let </span>polygon = <span class="macro">format!</span>(<span class="string">"ST_MakePolygon(ST_MakeLine(ARRAY[{}]))"</span>, points);
 
                 <span class="kw">let </span>valid_query = <span class="macro">format!</span>(<span class="string">"SELECT ST_IsValid({}) as is_valid"</span>, polygon);
-                <span class="kw">let </span>rows;
-                <span class="kw">match </span>client.query(<span class="kw-2">&amp;</span>valid_query, <span class="kw-2">&amp;</span>[]).<span class="kw">await </span>{
-                    <span class="prelude-val">Ok</span>(r) =&gt; {
-                        rows = r;
-                    }
+                <span class="kw">let </span>rows = <span class="kw">match </span>client.query(<span class="kw-2">&amp;</span>valid_query, <span class="kw-2">&amp;</span>[]).<span class="kw">await </span>{
+                    <span class="prelude-val">Ok</span>(r) =&gt; r,
                     <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Polygon is not valid"</span>));
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::BadRequest(<span class="string">"Polygon is not valid"</span>.to_string()).into());
                     }
                 };
 
                 <span class="kw">let </span>is_valid: bool = rows[<span class="number">0</span>].get(<span class="string">"is_valid"</span>);
                 <span class="kw">if </span>!is_valid {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Polygon is not valid"</span>));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::BadRequest(<span class="string">"Polygon is not valid"</span>.to_string()).into());
                 }
 
                 <span class="kw">let </span>insert_query = <span class="macro">format!</span>(
@@ -575,8 +569,7 @@
                         <span class="kw-2">&amp;</span>insert_query,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claims.user_id, <span class="kw-2">&amp;</span>input.text1, <span class="kw-2">&amp;</span>input.text2, <span class="kw-2">&amp;</span>input.text3],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span><span class="kw-2">mut </span>alert = rows
                     .iter()
                     .map(|row| Alert {
@@ -594,7 +587,7 @@
                     .collect::&lt;Vec&lt;Alert&gt;&gt;()
                     .first()
                     .cloned()
-                    .ok_or_else(|| async_graphql::Error::new(<span class="string">"Failed to create alert"</span>))<span class="question-mark">?</span>;
+                    .ok_or_else(|| AppError::BadRequest(<span class="string">"Failed to create alert"</span>.to_string()))<span class="question-mark">?</span>;
 
                 <span class="kw">struct </span>Level&lt;<span class="lifetime">'a</span>&gt; {
                     text: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str,
@@ -636,9 +629,8 @@
                             )"</span>,
                             <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert.id, <span class="kw-2">&amp;</span>level.distance],
                         )
-                        .<span class="kw">await
-                        </span>.unwrap()
-                        .iter()
+                        .<span class="kw">await</span><span class="question-mark">?
+                        </span>.iter()
                         .map(|row| row.get(<span class="number">0</span>))
                         .filter(|id| !positions.contains(id))
                         .collect();
@@ -651,8 +643,7 @@
                             <span class="kw-2">*</span>id,
                             LevelAlert::from_str(level.text).unwrap(),
                         )
-                        .<span class="kw">await
-                        </span>.unwrap();
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
                         notification_ids.push(notification);
                     }
 
@@ -661,7 +652,7 @@
                         .map(|i| <span class="macro">format!</span>(<span class="string">"${}"</span>, i))
                         .collect();
 
-                    <span class="kw">if </span>placeholders.len() &gt; <span class="number">0 </span>{
+                    <span class="kw">if </span>!placeholders.is_empty() {
                         <span class="kw">let </span>query = <span class="macro">format!</span>(
                             <span class="string">"SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
                             WHERE p.id IN ({}) AND notification_token IS NOT NULL"</span>,
@@ -676,9 +667,8 @@
                                     .map(|id| id <span class="kw">as </span><span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync))
                                     .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync)&gt;&gt;(),
                             )
-                            .<span class="kw">await
-                            </span>.unwrap()
-                            .iter()
+                            .<span class="kw">await</span><span class="question-mark">?
+                            </span>.iter()
                             .map(|row| {
                                 <span class="macro">format!</span>(<span class="string">"ExponentPushToken[{}]"</span>, row.get::&lt;usize, String&gt;(<span class="number">0</span>))
                             })
@@ -694,8 +684,7 @@
                                 <span class="kw">_ </span>=&gt; <span class="string">"Check it out in app!"</span>.to_string(),
                             },
                         )
-                        .<span class="kw">await
-                        </span>.unwrap();
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
                     }
 
                     positions.extend(position_ids);
@@ -706,8 +695,7 @@
                         <span class="string">"UPDATE alerts SET reached_users = $1 WHERE id = $2"</span>,
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert.reached_users, <span class="kw-2">&amp;</span>alert.id],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audio::tts(
                     alert.text1.clone(),

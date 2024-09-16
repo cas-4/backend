@@ -274,13 +274,20 @@
 <a href="#274" id="274">274</a>
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
-</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{graphql::types::jwt::Authentication, state::AppState};
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+    errors::AppError,
+    graphql::types::{jwt::Authentication, user::find_user},
+    state::AppState,
+};
 <span class="kw">use </span>async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
-
-<span class="kw">use </span><span class="kw">super</span>::user::find_user;
 
 <span class="attr">#[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 </span><span class="doccomment">/// Enumeration which refers to the kind of moving activity
@@ -372,14 +379,17 @@
 
         <span class="comment">// Optional offset results. It should be used with limit field.
         </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, String&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, AppError&gt; {
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>rows;
+                <span class="kw">let </span>limit = limit.unwrap_or(<span class="number">20</span>);
+                <span class="kw">let </span>offset = offset.unwrap_or(<span class="number">0</span>);
+
                 <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
                     .<span class="kw">await
                     </span>.expect(<span class="string">"Should not be here"</span>);
@@ -394,7 +404,7 @@
                             ORDER BY id DESC
                             LIMIT $2
                             OFFSET $3"</span>,
-                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)]).<span class="kw">await</span>.unwrap();
+                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset]).<span class="kw">await</span><span class="question-mark">?</span>;
                         }
                         <span class="prelude-val">None </span>=&gt; {
                             rows = client.query(<span class="string">"
@@ -403,7 +413,7 @@
                             ORDER BY id DESC
                             LIMIT $1
                             OFFSET $2"</span>,
-                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)]).<span class="kw">await</span>.unwrap();
+                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset]).<span class="kw">await</span><span class="question-mark">?</span>;
                         }
                     }
                 } <span class="kw">else </span>{
@@ -414,7 +424,7 @@
                     ORDER BY id DESC
                     LIMIT $2
                     OFFSET $3"</span>,
-                    <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)]).<span class="kw">await</span>.unwrap();
+                    <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset]).<span class="kw">await</span><span class="question-mark">?</span>;
                 }
 
                 <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
@@ -441,19 +451,19 @@
 
         <span class="comment">// Optional filter by moving activity
         </span>moving_activity: <span class="prelude-ty">Option</span>&lt;MovingActivity&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, String&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, AppError&gt; {
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string()),
+            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
                     .<span class="kw">await
                     </span>.expect(<span class="string">"Should not be here"</span>);
 
                 <span class="kw">if </span>!claim_user.is_admin {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Unauthorized"</span>.to_string());
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(AppError::Unauthorized);
                 }
 
                 <span class="kw">let </span>rows = client
@@ -463,8 +473,7 @@
                             FROM positions ORDER BY user_id, created_at DESC"</span>,
                             <span class="kw-2">&amp;</span>[],
                         )
-                        .<span class="kw">await
-                        </span>.unwrap();
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">let </span>positions: Vec&lt;Position&gt; = <span class="kw">match </span>moving_activity {
                     <span class="prelude-val">Some</span>(activity) =&gt; rows
@@ -509,9 +518,11 @@
         <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
         <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
 
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data().unwrap();
+        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
         <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(async_graphql::Error::new(<span class="string">"Can't find the owner"</span>)),
+            Authentication::NotLogged =&gt; {
+                <span class="prelude-val">Err</span>(AppError::NotFound(<span class="string">"Can't find the owner"</span>.to_string()).into())
+            }
             Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>rows = client
                     .query(
@@ -530,8 +541,7 @@
                             <span class="kw-2">&amp;</span>input.moving_activity,
                         ],
                     )
-                    .<span class="kw">await
-                    </span>.unwrap();
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
                     .iter()

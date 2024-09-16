@@ -152,7 +152,6 @@
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{errors::AppError, state::AppState};
 <span class="kw">use </span>async_graphql::{Context, Error, FieldResult, InputObject, SimpleObject};
 <span class="kw">use </span>axum::{async_trait, extract::FromRequestParts, http::request::Parts};
@@ -294,14 +293,13 @@
                 <span class="string">"SELECT id FROM users WHERE email = $1 AND password = $2"</span>,
                 <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>input.email, <span class="kw-2">&amp;</span>password],
             )
-            .<span class="kw">await
-            </span>.unwrap();
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>id: Vec&lt;i32&gt; = rows.iter().map(|row| row.get(<span class="number">0</span>)).collect();
         <span class="kw">if </span>id.len() == <span class="number">1 </span>{
             <span class="comment">// Create a new claim using the found ID
             </span><span class="kw">let </span>claims = Claims::new(id[<span class="number">0</span>]);
-            <span class="kw">let </span>token = claims.get_token().unwrap();
+            <span class="kw">let </span>token = claims.get_token()<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(AuthBody::new(token, id[<span class="number">0</span>]))
         } <span class="kw">else </span>{
             <span class="prelude-val">Err</span>(Error::new(<span class="string">"Invalid email or password"</span>))
