@@ -20,6 +20,7 @@ services:
     container_name: cas
     networks:
       - default
+      - cas
 
     environment:
       - RUST_LOG=${RUST_LOG}
@@ -36,3 +37,7 @@ services:
     restart: unless-stopped
 volumes:
   pgdata:
+
+networks:
+  cas:
+    external: true
