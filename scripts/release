@@ -4,6 +4,7 @@ if [ $# -eq 0 ]; then
 fi
 
 sed -i "3s/.*/version = \"$1\"/" Cargo.toml
+sed -i "12s/.*/LABEL version=\"$1\"/" Dockerfile
 cargo c
 git add Cargo.*
 git commit -m "release: version $1"

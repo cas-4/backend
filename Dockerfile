@@ -9,6 +9,8 @@ RUN cargo build --release
 # Stage 2
 FROM debian:bookworm-slim
 
+LABEL version="0.8.2"
+
 RUN mkdir -p /app
 
 RUN apt-get update && apt-get install -y libssl-dev
