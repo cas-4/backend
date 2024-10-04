@@ -10,7 +10,7 @@ description = "A GraphQL API for the Alert CAS project"
 readme = "README.md"
 
 [dependencies]
-async-graphql = "7.0.7"
+async-graphql = "7.0.10"
 async-graphql-axum = "7.0.7"
 axum = "0.7.5"
 config = "0.14.0"
