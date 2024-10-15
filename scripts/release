@@ -7,5 +7,6 @@ sed -i "3s/.*/version = \"$1\"/" Cargo.toml
 sed -i "12s/.*/LABEL version=\"$1\"/" Dockerfile
 cargo c
 git add Cargo.*
+git add Dockerfile
 git commit -m "release: version $1"
 git tag -a "v$1" -m "Version $1"
