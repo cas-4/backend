@@ -175,7 +175,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Filter by moving activity"</span>)] </span>moving_activity: <span class="prelude-ty">Option</span>&lt;
-            position::MovingActivity,
+            Vec&lt;position::MovingActivity&gt;,
         &gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Limit results"</span>)] </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
         <span class="attr">#[graphql(desc = <span class="string">"Offset results"</span>)] </span>offset: <span class="prelude-ty">Option</span>&lt;i64&gt;,
