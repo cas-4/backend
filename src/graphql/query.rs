@@ -59,7 +59,7 @@ impl Query {
         &self,
         ctx: &Context<'ctx>,
         #[graphql(desc = "Filter by moving activity")] moving_activity: Option<
-            position::MovingActivity,
+            Vec<position::MovingActivity>,
         >,
         #[graphql(desc = "Limit results")] limit: Option<i64>,
         #[graphql(desc = "Offset results")] offset: Option<i64>,

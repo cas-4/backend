@@ -4,6 +4,7 @@ use crate::{
     state::AppState,
 };
 use async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
+use core::fmt;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio_postgres::{
@@ -25,6 +26,23 @@ pub enum MovingActivity {
 
     // Device is not moving
     Still,
+}
+
+/// Implement `Display` trait for `MovingActivity` since we have to use it on format! function
+/// call.
+impl fmt::Display for MovingActivity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match *self {
+                MovingActivity::InVehicle => "InVehicle",
+                MovingActivity::Running => "Running",
+                MovingActivity::Walking => "Walking",
+                MovingActivity::Still => "Still",
+            }
+        )
+    }
 }
 
 impl<'a> FromSql<'a> for MovingActivity {
@@ -124,8 +142,8 @@ pub mod query {
     pub async fn get_positions<'ctx>(
         ctx: &Context<'ctx>,
 
-        // Optional filter by moving activity
-        moving_activity: Option<MovingActivity>,
+        // Optional filter by list of moving activity
+        moving_activity: Option<Vec<MovingActivity>>,
 
         // Optional limit results
         limit: Option<i64>,
@@ -150,34 +168,46 @@ pub mod query {
                     return Err(AppError::Unauthorized);
                 }
 
+                // Create filter for `movingActivity` field. If not passed by the user, just
+                // returns all kinda activities.
+                let moving_activity_filters: Vec<String> = if moving_activity.is_some() {
+                    moving_activity
+                        .unwrap()
+                        .into_iter()
+                        .map(|i| format!("'{}'", i))
+                        .collect()
+                } else {
+                    vec![
+                        "'InVehicle'".to_string(),
+                        "'Running'".to_string(),
+                        "'Walking'".to_string(),
+                        "'Still'".to_string(),
+                    ]
+                };
+
                 let rows = client
-                        .query("
+                        .query(&format!("
                             SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions
+                            WHERE activity IN ({})
                             LIMIT $1
                             OFFSET $2
-                            ",
+                            ", moving_activity_filters.join(", ")),
                             &[&limit, &offset],
                         )
                         .await?;
 
-                let mapped_positions = rows.iter().map(|row| Position {
-                    id: row.get("id"),
-                    user_id: row.get("user_id"),
-                    created_at: row.get::<_, f64>("created_at") as i64,
-                    latitude: row.get("latitude"),
-                    longitude: row.get("longitude"),
-                    moving_activity: row.get("activity"),
-                });
-
-                let positions: Vec<Position>;
-                if let Some(activity) = moving_activity {
-                    positions = mapped_positions
-                        .filter(|x| x.moving_activity == activity)
-                        .collect();
-                } else {
-                    positions = mapped_positions.collect();
-                }
+                let positions: Vec<Position> = rows
+                    .iter()
+                    .map(|row| Position {
+                        id: row.get("id"),
+                        user_id: row.get("user_id"),
+                        created_at: row.get::<_, f64>("created_at") as i64,
+                        latitude: row.get("latitude"),
+                        longitude: row.get("longitude"),
+                        moving_activity: row.get("activity"),
+                    })
+                    .collect();
 
                 Ok(Some(positions))
             }
