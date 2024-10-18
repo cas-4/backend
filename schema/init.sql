@@ -20,6 +20,8 @@ CREATE TABLE positions(
     PRIMARY KEY(id),
     CONSTRAINT fk_users_id
         FOREIGN KEY(user_id) REFERENCES users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT unique_user_position UNIQUE(user_id)
 );
 
 CREATE TYPE level_alert AS ENUM ('One', 'Two', 'Three');
@@ -34,8 +36,9 @@ CREATE TABLE alerts(
     text3 text NOT NULL,
     reached_users INTEGER DEFAULT 0 NOT NULL,
     PRIMARY KEY(id),
-    CONSTRAINT fk_users_id
+    CONSTRAINT fk_users_ich 
         FOREIGN KEY(user_id) REFERENCES users(id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE notifications(
@@ -47,7 +50,9 @@ CREATE TABLE notifications(
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY(id),
     CONSTRAINT fk_alerts_id
-        FOREIGN KEY(alert_id) REFERENCES alerts(id),
+        FOREIGN KEY(alert_id) REFERENCES alerts(id)
+        ON DELETE CASCADE,
     CONSTRAINT fk_positions_id
         FOREIGN KEY(position_id) REFERENCES positions(id)
+        ON DELETE CASCADE
 );

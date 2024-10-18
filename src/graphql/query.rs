@@ -46,43 +46,25 @@ impl Query {
         user::query::get_user_by_id(ctx, id).await
     }
 
-    /// Returns all the positions
+    /// Returns all the positions. It is restricted to admins only.
     ///
     /// Request example:
     /// ```text
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{positions {id, userId, createdAt, latitude, longitude, movingActivity}}"}'
+    /// -d '{"query":"{positions(movingActivity: IN_VEHICLE) {id, userId, createdAt, latitude, longitude, movingActivity}}"}'
     /// ```
     async fn positions<'ctx>(
-        &self,
-        ctx: &Context<'ctx>,
-        #[graphql(desc = "Filter by user id")] user_id: Option<i32>,
-        #[graphql(desc = "Limit results")] limit: Option<i64>,
-        #[graphql(desc = "Offset results")] offset: Option<i64>,
-    ) -> Result<Option<Vec<position::Position>>, AppError> {
-        position::query::get_positions(ctx, user_id, limit, offset).await
-    }
-
-    /// Returns all the last positions for each user.
-    /// It is restricted to only admin users.
-    ///
-    /// Request example:
-    /// ```text
-    /// curl http://localhost:8000/graphql
-    /// -H 'authorization: Bearer ***'
-    /// -H 'content-type: application/json'
-    /// -d '{"query":"lastPositions(movingActivity: IN_VEHICLE) {id, userId, createdAt, latitude, longitude, movingActivity}}"}'
-    /// ```
-    async fn last_positions<'ctx>(
         &self,
         ctx: &Context<'ctx>,
         #[graphql(desc = "Filter by moving activity")] moving_activity: Option<
             position::MovingActivity,
         >,
+        #[graphql(desc = "Limit results")] limit: Option<i64>,
+        #[graphql(desc = "Offset results")] offset: Option<i64>,
     ) -> Result<Option<Vec<position::Position>>, AppError> {
-        position::query::last_positions(ctx, moving_activity).await
+        position::query::get_positions(ctx, moving_activity, limit, offset).await
     }
 
     /// Returns all the positions

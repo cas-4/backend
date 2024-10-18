@@ -6,7 +6,10 @@ use crate::{
 use async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
+use tokio_postgres::{
+    types::{to_sql_checked, FromSql, IsNull, ToSql, Type},
+    Client,
+};
 
 #[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 /// Enumeration which refers to the kind of moving activity
@@ -82,16 +85,47 @@ pub struct PositionInput {
     pub moving_activity: MovingActivity,
 }
 
+/// Find a position with user_id = `id` using the PostgreSQL `client`
+pub async fn find_user_position(client: &Client, id: i32) -> Result<Position, AppError> {
+    let rows = client
+        .query(
+            "SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+            FROM positions
+            WHERE user_id = $1",
+            &[&id],
+        )
+        .await
+        .unwrap();
+
+    let positions: Vec<Position> = rows
+        .iter()
+        .map(|row| Position {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            created_at: row.get::<_, f64>("created_at") as i64,
+            latitude: row.get("latitude"),
+            longitude: row.get("longitude"),
+            moving_activity: row.get("activity"),
+        })
+        .collect();
+
+    if positions.len() == 1 {
+        Ok(positions[0].clone())
+    } else {
+        Err(AppError::NotFound("Position".to_string()))
+    }
+}
+
 pub mod query {
     use super::*;
 
-    /// Get positions from the database
+    /// Get positions from the database for each user.
+    /// It is restricted to only admin users.
     pub async fn get_positions<'ctx>(
         ctx: &Context<'ctx>,
 
-        // Optional filter by user id. If not defined returns only available positions:
-        // If claimed user is admin returns everything, otherwise only positions linked to that user.
-        user_id: Option<i32>,
+        // Optional filter by moving activity
+        moving_activity: Option<MovingActivity>,
 
         // Optional limit results
         limit: Option<i64>,
@@ -105,78 +139,9 @@ pub mod query {
         match auth {
             Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(claims) => {
-                let rows;
                 let limit = limit.unwrap_or(20);
                 let offset = offset.unwrap_or(0);
 
-                let claim_user = find_user(client, claims.user_id)
-                    .await
-                    .expect("Should not be here");
-
-                if claim_user.is_admin {
-                    match user_id {
-                        Some(id) => {
-                            rows = client.query("
-                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                            FROM positions
-                            WHERE user_id = $1
-                            ORDER BY id DESC
-                            LIMIT $2
-                            OFFSET $3",
-                            &[&id, &limit, &offset]).await?;
-                        }
-                        None => {
-                            rows = client.query("
-                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                            FROM positions
-                            ORDER BY id DESC
-                            LIMIT $1
-                            OFFSET $2",
-                            &[&limit, &offset]).await?;
-                        }
-                    }
-                } else {
-                    rows = client.query("
-                    SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                    FROM positions
-                    WHERE user_id = $1
-                    ORDER BY id DESC
-                    LIMIT $2
-                    OFFSET $3",
-                    &[&claim_user.id, &limit, &offset]).await?;
-                }
-
-                let positions: Vec<Position> = rows
-                    .iter()
-                    .map(|row| Position {
-                        id: row.get("id"),
-                        user_id: row.get("user_id"),
-                        created_at: row.get::<_, f64>("created_at") as i64,
-                        latitude: row.get("latitude"),
-                        longitude: row.get("longitude"),
-                        moving_activity: row.get("activity"),
-                    })
-                    .collect();
-
-                Ok(Some(positions))
-            }
-        }
-    }
-
-    /// Get last positions from the database for each user.
-    /// It is restricted to only admin users.
-    pub async fn last_positions<'ctx>(
-        ctx: &Context<'ctx>,
-
-        // Optional filter by moving activity
-        moving_activity: Option<MovingActivity>,
-    ) -> Result<Option<Vec<Position>>, AppError> {
-        let state = ctx.data::<AppState>().expect("Can't connect to db");
-        let client = &*state.client;
-        let auth: &Authentication = ctx.data()?;
-        match auth {
-            Authentication::NotLogged => Err(AppError::Unauthorized),
-            Authentication::Logged(claims) => {
                 let claim_user = find_user(client, claims.user_id)
                     .await
                     .expect("Should not be here");
@@ -186,39 +151,33 @@ pub mod query {
                 }
 
                 let rows = client
-                        .query(
-                            "SELECT DISTINCT ON (user_id)
-                                id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                            FROM positions ORDER BY user_id, created_at DESC",
-                            &[],
+                        .query("
+                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                            FROM positions
+                            LIMIT $1
+                            OFFSET $2
+                            ",
+                            &[&limit, &offset],
                         )
                         .await?;
 
-                let positions: Vec<Position> = match moving_activity {
-                    Some(activity) => rows
-                        .iter()
-                        .map(|row| Position {
-                            id: row.get("id"),
-                            user_id: row.get("user_id"),
-                            created_at: row.get::<_, f64>("created_at") as i64,
-                            latitude: row.get("latitude"),
-                            longitude: row.get("longitude"),
-                            moving_activity: row.get("activity"),
-                        })
+                let mapped_positions = rows.iter().map(|row| Position {
+                    id: row.get("id"),
+                    user_id: row.get("user_id"),
+                    created_at: row.get::<_, f64>("created_at") as i64,
+                    latitude: row.get("latitude"),
+                    longitude: row.get("longitude"),
+                    moving_activity: row.get("activity"),
+                });
+
+                let positions: Vec<Position>;
+                if let Some(activity) = moving_activity {
+                    positions = mapped_positions
                         .filter(|x| x.moving_activity == activity)
-                        .collect(),
-                    None => rows
-                        .iter()
-                        .map(|row| Position {
-                            id: row.get("id"),
-                            user_id: row.get("user_id"),
-                            created_at: row.get::<_, f64>("created_at") as i64,
-                            latitude: row.get("latitude"),
-                            longitude: row.get("longitude"),
-                            moving_activity: row.get("activity"),
-                        })
-                        .collect(),
-                };
+                        .collect();
+                } else {
+                    positions = mapped_positions.collect();
+                }
 
                 Ok(Some(positions))
             }
@@ -229,7 +188,8 @@ pub mod query {
 pub mod mutations {
     use super::*;
 
-    /// Create a new position for a logged user
+    /// Create a new position for a logged user. If a position already exists, just edit that
+    /// position.
     pub async fn new_position<'ctx>(
         ctx: &Context<'ctx>,
         input: PositionInput,
@@ -243,8 +203,24 @@ pub mod mutations {
                 Err(AppError::NotFound("Can't find the owner".to_string()).into())
             }
             Authentication::Logged(claims) => {
-                let rows = client
-                    .query(
+                let rows = if find_user_position(client, claims.user_id).await.is_ok() {
+                    client.query(
+                        "UPDATE positions SET
+                        location = ST_SetSRID(ST_MakePoint($1, $2), 4326),
+                        activity = $3
+                        WHERE user_id = $4
+                        RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                        ",
+                        &[
+                            &input.longitude,
+                            &input.latitude,
+                            &input.moving_activity,
+                            &claims.user_id,
+                        ],
+                    )
+                    .await?
+                } else {
+                    client.query(
                         "INSERT INTO positions (user_id, location, activity)
                         VALUES (
                             $1,
@@ -260,7 +236,8 @@ pub mod mutations {
                             &input.moving_activity,
                         ],
                     )
-                    .await?;
+                    .await?
+                };
 
                 let positions: Vec<Position> = rows
                     .iter()
@@ -273,7 +250,6 @@ pub mod mutations {
                         moving_activity: row.get("activity"),
                     })
                     .collect();
-
                 Ok(positions[0].clone())
             }
         }
