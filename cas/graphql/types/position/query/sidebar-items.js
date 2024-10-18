@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get_positions","last_positions"]};
+window.SIDEBAR_ITEMS = {"fn":["get_positions"]};

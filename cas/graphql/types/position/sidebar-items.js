@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["MovingActivity"],"mod":["mutations","query"],"struct":["Position","PositionInput"]};
+window.SIDEBAR_ITEMS = {"enum":["MovingActivity"],"fn":["find_user_position"],"mod":["mutations","query"],"struct":["Position","PositionInput"]};

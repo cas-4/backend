@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/graphql/types/position.rs`."><title>position.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-c5d6553a23f1e5a6.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="cas" data-themes="" data-resource-suffix="" data-rustdoc-version="1.81.0 (eeb90cda1 2024-09-04)" data-channel="1.81.0" data-search-js="search-d234aafac6c221dd.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-d2fab2bf619172d3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/graphql/types/position.rs`."><title>position.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-492a78a4a87dcc01.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="cas" data-themes="" data-resource-suffix="" data-rustdoc-version="1.82.0 (f6e511eec 2024-10-15)" data-channel="1.82.0" data-search-js="search-a99f1315e7cc5121.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-921df33f47b8780c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-3b12f09e550e0385.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -255,30 +255,6 @@
 <a href="#255" id="255">255</a>
 <a href="#256" id="256">256</a>
 <a href="#257" id="257">257</a>
-<a href="#258" id="258">258</a>
-<a href="#259" id="259">259</a>
-<a href="#260" id="260">260</a>
-<a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a>
-<a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
-<a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
-<a href="#275" id="275">275</a>
-<a href="#276" id="276">276</a>
-<a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a>
-<a href="#279" id="279">279</a>
-<a href="#280" id="280">280</a>
-<a href="#281" id="281">281</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     graphql::types::{jwt::Authentication, user::find_user},
@@ -287,7 +263,10 @@
 <span class="kw">use </span>async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
-<span class="kw">use </span>tokio_postgres::types::{to_sql_checked, FromSql, IsNull, ToSql, Type};
+<span class="kw">use </span>tokio_postgres::{
+    types::{to_sql_checked, FromSql, IsNull, ToSql, Type},
+    Client,
+};
 
 <span class="attr">#[derive(Enum, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 </span><span class="doccomment">/// Enumeration which refers to the kind of moving activity
@@ -363,16 +342,47 @@
     <span class="kw">pub </span>moving_activity: MovingActivity,
 }
 
+<span class="doccomment">/// Find a position with user_id = `id` using the PostgreSQL `client`
+</span><span class="kw">pub async fn </span>find_user_position(client: <span class="kw-2">&amp;</span>Client, id: i32) -&gt; <span class="prelude-ty">Result</span>&lt;Position, AppError&gt; {
+    <span class="kw">let </span>rows = client
+        .query(
+            <span class="string">"SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+            FROM positions
+            WHERE user_id = $1"</span>,
+            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
+        )
+        .<span class="kw">await
+        </span>.unwrap();
+
+    <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
+        .iter()
+        .map(|row| Position {
+            id: row.get(<span class="string">"id"</span>),
+            user_id: row.get(<span class="string">"user_id"</span>),
+            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+            latitude: row.get(<span class="string">"latitude"</span>),
+            longitude: row.get(<span class="string">"longitude"</span>),
+            moving_activity: row.get(<span class="string">"activity"</span>),
+        })
+        .collect();
+
+    <span class="kw">if </span>positions.len() == <span class="number">1 </span>{
+        <span class="prelude-val">Ok</span>(positions[<span class="number">0</span>].clone())
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Err</span>(AppError::NotFound(<span class="string">"Position"</span>.to_string()))
+    }
+}
+
 <span class="kw">pub mod </span>query {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="doccomment">/// Get positions from the database
+    <span class="doccomment">/// Get positions from the database for each user.
+    /// It is restricted to only admin users.
     </span><span class="kw">pub async fn </span>get_positions&lt;<span class="lifetime">'ctx</span>&gt;(
         ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
 
-        <span class="comment">// Optional filter by user id. If not defined returns only available positions:
-        // If claimed user is admin returns everything, otherwise only positions linked to that user.
-        </span>user_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
+        <span class="comment">// Optional filter by moving activity
+        </span>moving_activity: <span class="prelude-ty">Option</span>&lt;MovingActivity&gt;,
 
         <span class="comment">// Optional limit results
         </span>limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
@@ -386,78 +396,9 @@
         <span class="kw">match </span>auth {
             Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(claims) =&gt; {
-                <span class="kw">let </span>rows;
                 <span class="kw">let </span>limit = limit.unwrap_or(<span class="number">20</span>);
                 <span class="kw">let </span>offset = offset.unwrap_or(<span class="number">0</span>);
 
-                <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
-                    .<span class="kw">await
-                    </span>.expect(<span class="string">"Should not be here"</span>);
-
-                <span class="kw">if </span>claim_user.is_admin {
-                    <span class="kw">match </span>user_id {
-                        <span class="prelude-val">Some</span>(id) =&gt; {
-                            rows = client.query(<span class="string">"
-                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                            FROM positions
-                            WHERE user_id = $1
-                            ORDER BY id DESC
-                            LIMIT $2
-                            OFFSET $3"</span>,
-                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset]).<span class="kw">await</span><span class="question-mark">?</span>;
-                        }
-                        <span class="prelude-val">None </span>=&gt; {
-                            rows = client.query(<span class="string">"
-                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                            FROM positions
-                            ORDER BY id DESC
-                            LIMIT $1
-                            OFFSET $2"</span>,
-                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset]).<span class="kw">await</span><span class="question-mark">?</span>;
-                        }
-                    }
-                } <span class="kw">else </span>{
-                    rows = client.query(<span class="string">"
-                    SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                    FROM positions
-                    WHERE user_id = $1
-                    ORDER BY id DESC
-                    LIMIT $2
-                    OFFSET $3"</span>,
-                    <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claim_user.id, <span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset]).<span class="kw">await</span><span class="question-mark">?</span>;
-                }
-
-                <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
-                    .iter()
-                    .map(|row| Position {
-                        id: row.get(<span class="string">"id"</span>),
-                        user_id: row.get(<span class="string">"user_id"</span>),
-                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                        latitude: row.get(<span class="string">"latitude"</span>),
-                        longitude: row.get(<span class="string">"longitude"</span>),
-                        moving_activity: row.get(<span class="string">"activity"</span>),
-                    })
-                    .collect();
-
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(positions))
-            }
-        }
-    }
-
-    <span class="doccomment">/// Get last positions from the database for each user.
-    /// It is restricted to only admin users.
-    </span><span class="kw">pub async fn </span>last_positions&lt;<span class="lifetime">'ctx</span>&gt;(
-        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
-
-        <span class="comment">// Optional filter by moving activity
-        </span>moving_activity: <span class="prelude-ty">Option</span>&lt;MovingActivity&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Position&gt;&gt;, AppError&gt; {
-        <span class="kw">let </span>state = ctx.data::&lt;AppState&gt;().expect(<span class="string">"Can't connect to db"</span>);
-        <span class="kw">let </span>client = <span class="kw-2">&amp;*</span>state.client;
-        <span class="kw">let </span>auth: <span class="kw-2">&amp;</span>Authentication = ctx.data()<span class="question-mark">?</span>;
-        <span class="kw">match </span>auth {
-            Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
-            Authentication::Logged(claims) =&gt; {
                 <span class="kw">let </span>claim_user = find_user(client, claims.user_id)
                     .<span class="kw">await
                     </span>.expect(<span class="string">"Should not be here"</span>);
@@ -467,39 +408,33 @@
                 }
 
                 <span class="kw">let </span>rows = client
-                        .query(
-                            <span class="string">"SELECT DISTINCT ON (user_id)
-                                id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
-                            FROM positions ORDER BY user_id, created_at DESC"</span>,
-                            <span class="kw-2">&amp;</span>[],
+                        .query(<span class="string">"
+                            SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                            FROM positions
+                            LIMIT $1
+                            OFFSET $2
+                            "</span>,
+                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit, <span class="kw-2">&amp;</span>offset],
                         )
                         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let </span>positions: Vec&lt;Position&gt; = <span class="kw">match </span>moving_activity {
-                    <span class="prelude-val">Some</span>(activity) =&gt; rows
-                        .iter()
-                        .map(|row| Position {
-                            id: row.get(<span class="string">"id"</span>),
-                            user_id: row.get(<span class="string">"user_id"</span>),
-                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                            latitude: row.get(<span class="string">"latitude"</span>),
-                            longitude: row.get(<span class="string">"longitude"</span>),
-                            moving_activity: row.get(<span class="string">"activity"</span>),
-                        })
+                <span class="kw">let </span>mapped_positions = rows.iter().map(|row| Position {
+                    id: row.get(<span class="string">"id"</span>),
+                    user_id: row.get(<span class="string">"user_id"</span>),
+                    created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                    latitude: row.get(<span class="string">"latitude"</span>),
+                    longitude: row.get(<span class="string">"longitude"</span>),
+                    moving_activity: row.get(<span class="string">"activity"</span>),
+                });
+
+                <span class="kw">let </span>positions: Vec&lt;Position&gt;;
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(activity) = moving_activity {
+                    positions = mapped_positions
                         .filter(|x| x.moving_activity == activity)
-                        .collect(),
-                    <span class="prelude-val">None </span>=&gt; rows
-                        .iter()
-                        .map(|row| Position {
-                            id: row.get(<span class="string">"id"</span>),
-                            user_id: row.get(<span class="string">"user_id"</span>),
-                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                            latitude: row.get(<span class="string">"latitude"</span>),
-                            longitude: row.get(<span class="string">"longitude"</span>),
-                            moving_activity: row.get(<span class="string">"activity"</span>),
-                        })
-                        .collect(),
-                };
+                        .collect();
+                } <span class="kw">else </span>{
+                    positions = mapped_positions.collect();
+                }
 
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(positions))
             }
@@ -510,7 +445,8 @@
 <span class="kw">pub mod </span>mutations {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="doccomment">/// Create a new position for a logged user
+    <span class="doccomment">/// Create a new position for a logged user. If a position already exists, just edit that
+    /// position.
     </span><span class="kw">pub async fn </span>new_position&lt;<span class="lifetime">'ctx</span>&gt;(
         ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'ctx</span>&gt;,
         input: PositionInput,
@@ -524,8 +460,24 @@
                 <span class="prelude-val">Err</span>(AppError::NotFound(<span class="string">"Can't find the owner"</span>.to_string()).into())
             }
             Authentication::Logged(claims) =&gt; {
-                <span class="kw">let </span>rows = client
-                    .query(
+                <span class="kw">let </span>rows = <span class="kw">if </span>find_user_position(client, claims.user_id).<span class="kw">await</span>.is_ok() {
+                    client.query(
+                        <span class="string">"UPDATE positions SET
+                        location = ST_SetSRID(ST_MakePoint($1, $2), 4326),
+                        activity = $3
+                        WHERE user_id = $4
+                        RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
+                        "</span>,
+                        <span class="kw-2">&amp;</span>[
+                            <span class="kw-2">&amp;</span>input.longitude,
+                            <span class="kw-2">&amp;</span>input.latitude,
+                            <span class="kw-2">&amp;</span>input.moving_activity,
+                            <span class="kw-2">&amp;</span>claims.user_id,
+                        ],
+                    )
+                    .<span class="kw">await</span><span class="question-mark">?
+                </span>} <span class="kw">else </span>{
+                    client.query(
                         <span class="string">"INSERT INTO positions (user_id, location, activity)
                         VALUES (
                             $1,
@@ -541,7 +493,8 @@
                             <span class="kw-2">&amp;</span>input.moving_activity,
                         ],
                     )
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                    .<span class="kw">await</span><span class="question-mark">?
+                </span>};
 
                 <span class="kw">let </span>positions: Vec&lt;Position&gt; = rows
                     .iter()
@@ -554,7 +507,6 @@
                         moving_activity: row.get(<span class="string">"activity"</span>),
                     })
                     .collect();
-
                 <span class="prelude-val">Ok</span>(positions[<span class="number">0</span>].clone())
             }
         }
