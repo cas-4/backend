@@ -36,7 +36,7 @@ CREATE TABLE alerts(
     text3 text NOT NULL,
     reached_users INTEGER DEFAULT 0 NOT NULL,
     PRIMARY KEY(id),
-    CONSTRAINT fk_users_ich 
+    CONSTRAINT fk_users_id 
         FOREIGN KEY(user_id) REFERENCES users(id)
         ON DELETE CASCADE
 );
