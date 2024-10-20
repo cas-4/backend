@@ -111,9 +111,6 @@
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{errors::AppError, graphql::types::<span class="kw-2">*</span>};
 <span class="kw">use </span>async_graphql::{Context, Object};
 
@@ -209,13 +206,10 @@
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{notifications(seen: false alertId: 1) {
+    /// -d '{"query":"{notifications {
     /// id,
     /// alert { id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3, reachedUsers },
-    /// position {id, userId, createdAt, latitude, longitude, movingActivity},
-    /// seen,
-    /// level,
-    /// createdAt
+    /// userId, latitude, longitude, movingActivity, level, seen, createdAt
     /// }}"}'
     /// ```
     </span><span class="kw">async fn </span>notifications&lt;<span class="lifetime">'ctx</span>&gt;(

@@ -369,6 +369,7 @@
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     expo,
@@ -445,17 +446,17 @@
                         client
                             .query(
                                 <span class="string">"SELECT id,
-                            user_id,
-                            extract(epoch from created_at)::double precision as created_at,
-                            ST_AsText(area) as area,
-                            ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                            ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                            text1,
-                            text2,
-                            text3,
-                            reached_users
-                    FROM alerts
-                    WHERE id = $1"</span>,
+                                    user_id,
+                                    extract(epoch from created_at)::double precision as created_at,
+                                    ST_AsText(area) as area,
+                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                                    text1,
+                                    text2,
+                                    text3,
+                                    reached_users
+                                FROM alerts
+                                WHERE id = $1"</span>,
                                 <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
                             )
                             .<span class="kw">await</span><span class="question-mark">?
@@ -464,19 +465,19 @@
                         client
                             .query(
                                 <span class="string">"SELECT id,
-                        user_id,
-                        extract(epoch from created_at)::double precision as created_at,
-                        ST_AsText(area) as area,
-                        ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                        ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                        text1,
-                        text2,
-                        text3,
-                        reached_users
-                    FROM alerts
-                    ORDER BY id DESC
-                    LIMIT $1
-                    OFFSET $2"</span>,
+                                    user_id,
+                                    extract(epoch from created_at)::double precision as created_at,
+                                    ST_AsText(area) as area,
+                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                                    text1,
+                                    text2,
+                                    text3,
+                                    reached_users
+                                FROM alerts
+                                ORDER BY id DESC
+                                LIMIT $1
+                                OFFSET $2"</span>,
                                 <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)],
                             )
                             .<span class="kw">await</span><span class="question-mark">?
@@ -506,7 +507,7 @@
 }
 
 <span class="kw">pub mod </span>mutations {
-    <span class="kw">use </span><span class="kw">crate</span>::audio;
+    <span class="kw">use crate</span>::{audio, graphql::types::position::Position};
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -609,13 +610,13 @@
                     },
                 ];
 
-                <span class="kw">let </span><span class="kw-2">mut </span>positions: Vec&lt;i32&gt; = <span class="macro">vec!</span>[];
+                <span class="kw">let </span><span class="kw-2">mut </span>alerted_positions: Vec&lt;i32&gt; = <span class="macro">vec!</span>[];
 
                 <span class="comment">// Send notifications for each available level
                 </span><span class="kw">for </span>level <span class="kw">in </span>levels {
-                    <span class="kw">let </span>position_ids: Vec&lt;i32&gt; = client
+                    <span class="kw">let </span>positions: Vec&lt;Position&gt; = client
                         .query(
-                            <span class="string">"SELECT id
+                            <span class="string">"SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions p
                             WHERE ST_DWithin(
                                     p.location::geography,
@@ -631,16 +632,23 @@
                         )
                         .<span class="kw">await</span><span class="question-mark">?
                         </span>.iter()
-                        .map(|row| row.get(<span class="number">0</span>))
-                        .filter(|id| !positions.contains(id))
+                        .map(|row| Position {
+                            id: row.get(<span class="string">"id"</span>),
+                            user_id: row.get(<span class="string">"user_id"</span>),
+                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                            latitude: row.get(<span class="string">"latitude"</span>),
+                            longitude: row.get(<span class="string">"longitude"</span>),
+                            moving_activity: row.get(<span class="string">"activity"</span>),
+                        })
+                        .filter(|p| !alerted_positions.contains(<span class="kw-2">&amp;</span>p.id))
                         .collect();
 
                     <span class="kw">let </span><span class="kw-2">mut </span>notification_ids = <span class="macro">vec!</span>[];
-                    <span class="kw">for </span>id <span class="kw">in </span><span class="kw-2">&amp;</span>position_ids {
+                    <span class="kw">for </span>p <span class="kw">in </span><span class="kw-2">&amp;</span>positions {
                         <span class="kw">let </span>notification = Notification::insert_db(
                             client,
                             alert.id,
-                            <span class="kw-2">*</span>id,
+                            <span class="kw-2">&amp;</span>p,
                             LevelAlert::from_str(level.text).unwrap(),
                         )
                         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -648,25 +656,19 @@
                     }
 
                     alert.reached_users += notification_ids.len() <span class="kw">as </span>i32;
-                    <span class="kw">let </span>placeholders: Vec&lt;String&gt; = (<span class="number">1</span>..=position_ids.len())
-                        .map(|i| <span class="macro">format!</span>(<span class="string">"${}"</span>, i))
-                        .collect();
+                    <span class="comment">// Users placeholders
+                    </span><span class="kw">let </span>placeholders: Vec&lt;String&gt; =
+                        positions.iter().map(|p| <span class="macro">format!</span>(<span class="string">"{}"</span>, p.user_id)).collect();
 
                     <span class="kw">if </span>!placeholders.is_empty() {
                         <span class="kw">let </span>query = <span class="macro">format!</span>(
-                            <span class="string">"SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
-                            WHERE p.id IN ({}) AND notification_token IS NOT NULL"</span>,
+                            <span class="string">"SELECT DISTINCT u.notification_token FROM users u
+                            WHERE u.id IN ({}) AND notification_token IS NOT NULL"</span>,
                             placeholders.join(<span class="string">", "</span>)
                         );
 
                         <span class="kw">let </span>tokens: Vec&lt;String&gt; = client
-                            .query(
-                                <span class="kw-2">&amp;</span>query,
-                                <span class="kw-2">&amp;</span>position_ids
-                                    .iter()
-                                    .map(|id| id <span class="kw">as </span><span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync))
-                                    .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>tokio_postgres::types::ToSql + Sync)&gt;&gt;(),
-                            )
+                            .query(<span class="kw-2">&amp;</span>query, <span class="kw-2">&amp;</span>[])
                             .<span class="kw">await</span><span class="question-mark">?
                             </span>.iter()
                             .map(|row| {
@@ -687,7 +689,7 @@
                         .<span class="kw">await</span><span class="question-mark">?</span>;
                     }
 
-                    positions.extend(position_ids);
+                    alerted_positions.extend(positions.iter().map(|p| p.id).collect::&lt;Vec&lt;i32&gt;&gt;());
                 }
 
                 client
