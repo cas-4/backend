@@ -1,6 +1,11 @@
 use crate::{
     errors::AppError,
-    graphql::types::{alert::Alert, jwt::Authentication, position::Position, user::find_user},
+    graphql::types::{
+        alert::Alert,
+        jwt::Authentication,
+        position::{MovingActivity, Position},
+        user::find_user,
+    },
     state::AppState,
 };
 use async_graphql::{Context, Enum, FieldResult, InputObject, SimpleObject};
@@ -77,7 +82,10 @@ impl ToSql for LevelAlert {
 pub struct Notification {
     pub id: i32,
     pub alert: Alert,
-    pub position: Position,
+    pub user_id: i32,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub moving_activity: MovingActivity,
     pub seen: bool,
     pub level: LevelAlert,
     pub created_at: i64,
@@ -91,21 +99,28 @@ pub struct NotificationUpdateInput {
 }
 
 impl Notification {
-    /// Create a new notification into the database from an alert_id and a position_id.
+    /// Create a new notification into the database from an alert_id and a position.
     /// Returns the new ID.
     pub async fn insert_db(
         client: &Client,
         alert_id: i32,
-        position_id: i32,
+        position: &Position,
         level: LevelAlert,
     ) -> Result<i32, AppError> {
         match client
             .query(
-                "INSERT INTO notifications(alert_id, position_id, level)
-                VALUES($1, $2, $3)
+                "INSERT INTO notifications(alert_id, user_id, location, activity, level)
+                VALUES($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, $6)
                 RETURNING id
                 ",
-                &[&alert_id, &position_id, &level],
+                &[
+                    &alert_id,
+                    &position.user_id,
+                    &position.longitude,
+                    &position.latitude,
+                    &position.moving_activity,
+                    &level,
+                ],
             )
             .await
         {
@@ -155,10 +170,13 @@ pub mod query {
 
                 let base_query = "SELECT n.id,
                                 n.alert_id,
-                                n.position_id,
                                 n.seen,
                                 n.level,
                                 extract(epoch from n.created_at)::double precision as created_at,
+                                ST_Y(n.location::geometry) AS latitude,
+                                ST_X(n.location::geometry) AS longitude,
+                                n.activity,
+                                n.user_id,
                                 a.id as alert_id,
                                 a.user_id as alert_user_id,
                                 extract(epoch from a.created_at)::double precision as alert_created_at,
@@ -168,16 +186,9 @@ pub mod query {
                                 a.text1 as alert_text1,
                                 a.text2 as alert_text2,
                                 a.text3 as alert_text3,
-                                a.reached_users as alert_reached_users,
-                                p.id as position_id,
-                                p.user_id as position_user_id,
-                                extract(epoch from p.created_at)::double precision as position_created_at,
-                                ST_Y(p.location::geometry) AS position_latitude,
-                                ST_X(p.location::geometry) AS position_longitude,
-                                p.activity as position_activity
+                                a.reached_users as alert_reached_users
                         FROM notifications n
-                        JOIN alerts a ON n.alert_id = a.id
-                        JOIN positions p ON n.position_id = p.id".to_string();
+                        JOIN alerts a ON n.alert_id = a.id".to_string();
 
                 let base_query = match id {
                     Some(idn) => format!("{} WHERE n.id = {}", base_query, idn),
@@ -200,7 +211,7 @@ pub mod query {
                 Some (ida) =>
                     client
                     .query(&format!(
-                        "{base_query} AND p.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
+                        "{base_query} AND n.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
                     ), &[&claim_user.id, &ida, &limit, &offset])
                     .await?,
                 None if claim_user.is_admin => client
@@ -211,7 +222,7 @@ pub mod query {
                     .await?,
                 None =>
                     client.query(
-                        &format!("{base_query} AND p.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
+                        &format!("{base_query} AND n.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
                         &[&claim_user.id, &limit, &offset],
                     )
                     .await?,
@@ -233,16 +244,12 @@ pub mod query {
                             text3: row.get("alert_text3"),
                             reached_users: row.get("alert_reached_users"),
                         },
-                        position: Position {
-                            id: row.get("position_id"),
-                            user_id: row.get("position_user_id"),
-                            created_at: row.get::<_, f64>("position_created_at") as i64,
-                            latitude: row.get("position_latitude"),
-                            longitude: row.get("position_longitude"),
-                            moving_activity: row.get("position_activity"),
-                        },
                         seen: row.get("seen"),
                         level: row.get("level"),
+                        user_id: row.get("user_id"),
+                        latitude: row.get("latitude"),
+                        longitude: row.get("longitude"),
+                        moving_activity: row.get("activity"),
                         created_at: row.get::<_, f64>("created_at") as i64,
                     })
                     .collect();
@@ -273,10 +280,13 @@ pub mod mutations {
 
                 let notification = client.query("SELECT n.id,
                                 n.alert_id,
-                                n.position_id,
-                                n.level,
                                 n.seen,
+                                n.level,
                                 extract(epoch from n.created_at)::double precision as created_at,
+                                ST_Y(n.location::geometry) AS latitude,
+                                ST_X(n.location::geometry) AS longitude,
+                                n.activity,
+                                n.user_id,
                                 a.id as alert_id,
                                 a.user_id as alert_user_id,
                                 extract(epoch from a.created_at)::double precision as alert_created_at,
@@ -286,16 +296,9 @@ pub mod mutations {
                                 a.text1 as alert_text1,
                                 a.text2 as alert_text2,
                                 a.text3 as alert_text3,
-                                a.reached_users as alert_reached_users,
-                                p.id as position_id,
-                                p.user_id as position_user_id,
-                                extract(epoch from p.created_at)::double precision as position_created_at,
-                                ST_Y(p.location::geometry) AS position_latitude,
-                                ST_X(p.location::geometry) AS position_longitude,
-                                p.activity as position_activity
+                                a.reached_users as alert_reached_users
                         FROM notifications n
                         JOIN alerts a ON n.alert_id = a.id
-                        JOIN positions p ON n.position_id = p.id
                         WHERE n.id = $1
                         ",
                        &[&input.id])
@@ -315,16 +318,12 @@ pub mod mutations {
                             text3: row.get("alert_text3"),
                             reached_users: row.get("alert_reached_users"),
                         },
-                        position: Position {
-                            id: row.get("position_id"),
-                            user_id: row.get("position_user_id"),
-                            created_at: row.get::<_, f64>("position_created_at") as i64,
-                            latitude: row.get("position_latitude"),
-                            longitude: row.get("position_longitude"),
-                            moving_activity: row.get("position_activity"),
-                        },
                         seen: row.get("seen"),
                         level: row.get("level"),
+                        user_id: row.get("user_id"),
+                        latitude: row.get("latitude"),
+                        longitude: row.get("longitude"),
+                        moving_activity: row.get("activity"),
                         created_at: row.get::<_, f64>("created_at") as i64,
                     })
                     .collect::<Vec<Notification>>()
@@ -332,7 +331,7 @@ pub mod mutations {
                     .cloned()
                     .ok_or_else(|| AppError::NotFound("Notification".to_string()))?;
 
-                if notification.position.user_id != user.id {
+                if notification.user_id != user.id {
                     return Err(AppError::NotFound("Notification".to_string()).into());
                 }
 

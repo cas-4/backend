@@ -44,7 +44,9 @@ CREATE TABLE alerts(
 CREATE TABLE notifications(
     id SERIAL NOT NULL,
     alert_id INTEGER NOT NULL,
-    position_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    location GEOGRAPHY(Point, 4326) NOT NULL,
+    activity moving_activity NOT NULL,
     seen BOOLEAN DEFAULT false,
     level level_alert NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -52,7 +54,7 @@ CREATE TABLE notifications(
     CONSTRAINT fk_alerts_id
         FOREIGN KEY(alert_id) REFERENCES alerts(id)
         ON DELETE CASCADE,
-    CONSTRAINT fk_positions_id
-        FOREIGN KEY(position_id) REFERENCES positions(id)
+    CONSTRAINT fk_users_id
+        FOREIGN KEY(user_id) REFERENCES users(id)
         ON DELETE CASCADE
 );

@@ -93,13 +93,10 @@ impl Query {
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{notifications(seen: false alertId: 1) {
+    /// -d '{"query":"{notifications {
     /// id,
     /// alert { id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3, reachedUsers },
-    /// position {id, userId, createdAt, latitude, longitude, movingActivity},
-    /// seen,
-    /// level,
-    /// createdAt
+    /// userId, latitude, longitude, movingActivity, level, seen, createdAt
     /// }}"}'
     /// ```
     async fn notifications<'ctx>(

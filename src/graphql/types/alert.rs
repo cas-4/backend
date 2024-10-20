@@ -74,17 +74,17 @@ pub mod query {
                         client
                             .query(
                                 "SELECT id,
-                            user_id,
-                            extract(epoch from created_at)::double precision as created_at,
-                            ST_AsText(area) as area,
-                            ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                            ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                            text1,
-                            text2,
-                            text3,
-                            reached_users
-                    FROM alerts
-                    WHERE id = $1",
+                                    user_id,
+                                    extract(epoch from created_at)::double precision as created_at,
+                                    ST_AsText(area) as area,
+                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                                    text1,
+                                    text2,
+                                    text3,
+                                    reached_users
+                                FROM alerts
+                                WHERE id = $1",
                                 &[&id],
                             )
                             .await?
@@ -93,19 +93,19 @@ pub mod query {
                         client
                             .query(
                                 "SELECT id,
-                        user_id,
-                        extract(epoch from created_at)::double precision as created_at,
-                        ST_AsText(area) as area,
-                        ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                        ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                        text1,
-                        text2,
-                        text3,
-                        reached_users
-                    FROM alerts
-                    ORDER BY id DESC
-                    LIMIT $1
-                    OFFSET $2",
+                                    user_id,
+                                    extract(epoch from created_at)::double precision as created_at,
+                                    ST_AsText(area) as area,
+                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                                    text1,
+                                    text2,
+                                    text3,
+                                    reached_users
+                                FROM alerts
+                                ORDER BY id DESC
+                                LIMIT $1
+                                OFFSET $2",
                                 &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
                             )
                             .await?
@@ -135,7 +135,7 @@ pub mod query {
 }
 
 pub mod mutations {
-    use crate::audio;
+    use crate::{audio, graphql::types::position::Position};
 
     use super::*;
 
@@ -238,13 +238,13 @@ pub mod mutations {
                     },
                 ];
 
-                let mut positions: Vec<i32> = vec![];
+                let mut alerted_positions: Vec<i32> = vec![];
 
                 // Send notifications for each available level
                 for level in levels {
-                    let position_ids: Vec<i32> = client
+                    let positions: Vec<Position> = client
                         .query(
-                            "SELECT id
+                            "SELECT id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                             FROM positions p
                             WHERE ST_DWithin(
                                     p.location::geography,
@@ -260,16 +260,23 @@ pub mod mutations {
                         )
                         .await?
                         .iter()
-                        .map(|row| row.get(0))
-                        .filter(|id| !positions.contains(id))
+                        .map(|row| Position {
+                            id: row.get("id"),
+                            user_id: row.get("user_id"),
+                            created_at: row.get::<_, f64>("created_at") as i64,
+                            latitude: row.get("latitude"),
+                            longitude: row.get("longitude"),
+                            moving_activity: row.get("activity"),
+                        })
+                        .filter(|p| !alerted_positions.contains(&p.id))
                         .collect();
 
                     let mut notification_ids = vec![];
-                    for id in &position_ids {
+                    for p in &positions {
                         let notification = Notification::insert_db(
                             client,
                             alert.id,
-                            *id,
+                            &p,
                             LevelAlert::from_str(level.text).unwrap(),
                         )
                         .await?;
@@ -277,25 +284,19 @@ pub mod mutations {
                     }
 
                     alert.reached_users += notification_ids.len() as i32;
-                    let placeholders: Vec<String> = (1..=position_ids.len())
-                        .map(|i| format!("${}", i))
-                        .collect();
+                    // Users placeholders
+                    let placeholders: Vec<String> =
+                        positions.iter().map(|p| format!("{}", p.user_id)).collect();
 
                     if !placeholders.is_empty() {
                         let query = format!(
-                            "SELECT DISTINCT u.notification_token FROM positions p JOIN users u ON u.id = p.user_id
-                            WHERE p.id IN ({}) AND notification_token IS NOT NULL",
+                            "SELECT DISTINCT u.notification_token FROM users u
+                            WHERE u.id IN ({}) AND notification_token IS NOT NULL",
                             placeholders.join(", ")
                         );
 
                         let tokens: Vec<String> = client
-                            .query(
-                                &query,
-                                &position_ids
-                                    .iter()
-                                    .map(|id| id as &(dyn tokio_postgres::types::ToSql + Sync))
-                                    .collect::<Vec<&(dyn tokio_postgres::types::ToSql + Sync)>>(),
-                            )
+                            .query(&query, &[])
                             .await?
                             .iter()
                             .map(|row| {
@@ -316,7 +317,7 @@ pub mod mutations {
                         .await?;
                     }
 
-                    positions.extend(position_ids);
+                    alerted_positions.extend(positions.iter().map(|p| p.id).collect::<Vec<i32>>());
                 }
 
                 client
