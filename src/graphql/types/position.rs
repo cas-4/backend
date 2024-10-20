@@ -237,7 +237,8 @@ pub mod mutations {
                     client.query(
                         "UPDATE positions SET
                         location = ST_SetSRID(ST_MakePoint($1, $2), 4326),
-                        activity = $3
+                        activity = $3,
+                        created_at = now()
                         WHERE user_id = $4
                         RETURNING id, user_id, extract(epoch from created_at)::double precision as created_at, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude, activity
                         ",
