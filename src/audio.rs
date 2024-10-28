@@ -28,13 +28,20 @@ pub async fn tts(text: String, filename: String) -> Result<(), String> {
 
     // Send POST request
     let client = reqwest::Client::new();
-    let response = client
+    let response;
+
+    match client
         .post(url)
         .header(AUTHORIZATION, api_key)
         .json(&body)
         .send()
         .await
-        .unwrap();
+    {
+        Ok(r) => response = r,
+        Err(e) => {
+            return Err(format!("Error creating new audio: {}", e));
+        }
+    };
 
     // Check for successful response
     if response.status().is_success() {
