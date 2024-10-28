@@ -84,6 +84,13 @@
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::config::CONFIG;
 <span class="kw">use </span>axum::{
     extract::Path,
@@ -114,13 +121,20 @@
 
     <span class="comment">// Send POST request
     </span><span class="kw">let </span>client = reqwest::Client::new();
-    <span class="kw">let </span>response = client
+    <span class="kw">let </span>response;
+
+    <span class="kw">match </span>client
         .post(url)
         .header(AUTHORIZATION, api_key)
         .json(<span class="kw-2">&amp;</span>body)
         .send()
         .<span class="kw">await
-        </span>.unwrap();
+    </span>{
+        <span class="prelude-val">Ok</span>(r) =&gt; response = r,
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"Error creating new audio: {}"</span>, e));
+        }
+    };
 
     <span class="comment">// Check for successful response
     </span><span class="kw">if </span>response.status().is_success() {
