@@ -17,6 +17,9 @@ services:
   cas:
     image: ghcr.io/cas-4/backend:latest
     container_name: cas
+    hostname: api.cas.local
+    extra_hosts:
+      - "api.cas.local:0.0.0.0"
     networks:
       - default
       - cas
