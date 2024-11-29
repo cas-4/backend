@@ -180,6 +180,41 @@ pub mod mutations {
                     return Err(AppError::BadRequest("Polygon is not valid".to_string()).into());
                 }
 
+                // This is like a cache system to avoid multiple alerts for the same area within 10
+                // minutes of interval
+                if let Some(previous_alert) = client.query(
+                    &format!(
+                        "SELECT
+                            id, user_id, extract(epoch from created_at)::double precision as created_at,
+                            ST_AsText(area) as area,
+                            ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
+                            ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
+                            text1, text2, text3,
+                            reached_users
+                        FROM alerts WHERE area = {} AND created_at >= NOW() - INTERVAL '10 MINUTE'",
+                        polygon
+                    ),
+                    &[]
+                ).await?
+                    .iter()
+                    .map(|row| Alert {
+                        id: row.get("id"),
+                        user_id: row.get("user_id"),
+                        created_at: row.get::<_, f64>("created_at") as i64,
+                        area: row.get("area"),
+                        area_level2: row.get("area_level2"),
+                        area_level3: row.get("area_level3"),
+                        text1: row.get("text1"),
+                        text2: row.get("text2"),
+                        text3: row.get("text3"),
+                        reached_users: row.get("reached_users"),
+                    })
+                    .collect::<Vec<Alert>>()
+                    .first()
+                    .cloned() {
+                        return Ok(previous_alert);
+                }
+
                 let insert_query = format!(
                     "INSERT INTO alerts (user_id, area, text1, text2, text3)
                     VALUES($1, {}, $2, $3, $4)
