@@ -14,7 +14,6 @@ use std::{
 pub async fn tts(text: String, filename: String) -> Result<(), String> {
     let url = "https://api.v7.unrealspeech.com/stream";
     let api_key = format!("Bearer {}", CONFIG.unrealspeech_token);
-    let filepath = format!("./assets/sounds/{}", filename);
 
     // Request JSON body
     let body = serde_json::json!({
@@ -45,6 +44,8 @@ pub async fn tts(text: String, filename: String) -> Result<(), String> {
 
     // Check for successful response
     if response.status().is_success() {
+        let filepath = format!("{}/{}", CONFIG.audio_path, filename);
+
         let mut file = File::create(filepath).unwrap();
         let content = response.bytes().await.unwrap();
         let _ = file.write_all(&content);
@@ -75,7 +76,7 @@ pub async fn show_file(
         );
     }
 
-    let file_name = format!("./assets/sounds/{}", id);
+    let file_name = format!("{}/{}", CONFIG.audio_path, id);
     let file_path = StdPath::new(&file_name);
 
     if !file_path.exists() {

@@ -31,6 +31,7 @@ services:
       - ALLOWED_HOST=${ALLOWED_HOST}
       - EXPO_ACCESS_TOKEN=${EXPO_ACCESS_TOKEN}
       - UNREALSPEECH_TOKEN=${UNREALSPEECH_TOKEN}
+      - AUDIO_PATH=${AUDIO_PATH}
 
     depends_on:
       - postgres

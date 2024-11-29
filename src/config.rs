@@ -22,6 +22,9 @@ pub struct Configuration {
 
     /// Token used for text-to-speach API
     pub unrealspeech_token: String,
+
+    /// Audio folder path
+    pub audio_path: String,
 }
 
 impl Configuration {
