@@ -305,6 +305,7 @@ pub mod mutations {
                             .collect();
 
                         expo::send(
+                            (*state.expo).clone(),
                             tokens,
                             "New Alert!".to_string(),
                             match level.text {

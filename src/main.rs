@@ -31,11 +31,11 @@ use tracing::Span;
 /// Create the app: setup everything and returns a `Router`
 async fn create_app() -> Result<Router, AppError> {
     logger::setup();
-    expo::setup(CONFIG.expo_access_token.clone());
     let dbclient = db::setup().await?;
 
     let state = state::AppState {
         client: Arc::new(dbclient),
+        expo: Arc::new(expo::setup(CONFIG.expo_access_token.clone())),
     };
 
     let schema = Schema::build(

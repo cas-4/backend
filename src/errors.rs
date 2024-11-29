@@ -96,3 +96,10 @@ impl From<async_graphql::Error> for AppError {
         AppError::BadRequest(value.message)
     }
 }
+
+/// A expo_push_notification_client::ValidationError is mapped to an `AppError::BadRequest`
+impl From<expo_push_notification_client::ValidationError> for AppError {
+    fn from(value: expo_push_notification_client::ValidationError) -> Self {
+        AppError::BadRequest(value.to_string())
+    }
+}
