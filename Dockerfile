@@ -13,7 +13,7 @@ LABEL version="0.8.7"
 
 RUN mkdir -p /app
 
-RUN apt-get update && apt-get install -y libssl-dev
+RUN apt-get update && apt-get install -y libssl-dev ca-certificates
 RUN groupadd -g 999 appuser && \
     useradd -r -u 999 -g appuser appuser
 
