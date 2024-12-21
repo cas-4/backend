@@ -116,7 +116,7 @@
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>AppError {
     <span class="doccomment">/// Database error
-    </span>Database,
+    </span>Database(String),
     <span class="doccomment">/// Generic bad request. It is handled with a message value
     </span>BadRequest(String),
     <span class="doccomment">/// Not found error
@@ -138,9 +138,9 @@
     /// ```
     </span><span class="kw">fn </span>into_response(<span class="self">self</span>) -&gt; Response {
         <span class="kw">let </span>(status, error_message) = <span class="kw">match </span><span class="self">self </span>{
-            AppError::Database =&gt; (
+            AppError::Database(value) =&gt; (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                <span class="string">"Error with database connection"</span>.to_string(),
+                <span class="macro">format!</span>(<span class="string">"Error with database connection: {value}"</span>),
             ),
             AppError::BadRequest(value) =&gt; (StatusCode::BAD_REQUEST, value),
             AppError::NotFound(value) =&gt; (StatusCode::NOT_FOUND, value),
@@ -178,7 +178,7 @@
 </span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>AppError {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
-            AppError::Database =&gt; <span class="macro">write!</span>(f, <span class="string">"Database"</span>),
+            AppError::Database(value) =&gt; <span class="macro">write!</span>(f, <span class="string">"Database: {}"</span>, value),
             AppError::BadRequest(value) =&gt; <span class="macro">write!</span>(f, <span class="string">"BadRequest: {}"</span>, value),
             AppError::NotFound(value) =&gt; <span class="macro">write!</span>(f, <span class="string">"Not found: {}"</span>, value),
             AppError::TokenCreation =&gt; <span class="macro">write!</span>(f, <span class="string">"Token creation"</span>),
@@ -190,8 +190,8 @@
 
 <span class="doccomment">/// A tokio_postgres error is mapped to an `AppError::Database`
 </span><span class="kw">impl </span>From&lt;tokio_postgres::Error&gt; <span class="kw">for </span>AppError {
-    <span class="kw">fn </span>from(<span class="kw">_</span>: tokio_postgres::Error) -&gt; <span class="self">Self </span>{
-        AppError::Database
+    <span class="kw">fn </span>from(value: tokio_postgres::Error) -&gt; <span class="self">Self </span>{
+        AppError::Database(value.to_string())
     }
 }
 

@@ -99,7 +99,10 @@
 <a href="#98" id="98">98</a>
 <a href="#99" id="99">99</a>
 <a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a></pre></div><pre class="rust"><code><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a></pre></div><pre class="rust"><code><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 </span><span class="kw">mod </span>audio;
 <span class="kw">mod </span>config;
 <span class="kw">mod </span>db;
@@ -182,22 +185,25 @@
 
 <span class="attr">#[tokio::main(flavor = <span class="string">"current_thread"</span>)]
 </span><span class="kw">async fn </span>main() {
-    <span class="kw">if let </span><span class="prelude-val">Ok</span>(app) = create_app().<span class="kw">await </span>{
-        <span class="kw">let </span>host = <span class="kw-2">&amp;</span>CONFIG.allowed_host;
+    <span class="kw">match </span>create_app().<span class="kw">await </span>{
+        <span class="prelude-val">Ok</span>(app) =&gt; {
+            <span class="kw">let </span>host = <span class="kw-2">&amp;</span>CONFIG.allowed_host;
 
-        <span class="kw">let </span>addr = <span class="kw">match </span>host.parse::&lt;SocketAddr&gt;() {
-            <span class="prelude-val">Ok</span>(addr) =&gt; addr,
-            <span class="prelude-val">Err</span>(e) =&gt; {
-                <span class="macro">panic!</span>(<span class="string">"`{}` {}"</span>, host, e);
-            }
-        };
-        <span class="macro">tracing::info!</span>(<span class="string">"Listening on {}"</span>, addr);
+            <span class="kw">let </span>addr = <span class="kw">match </span>host.parse::&lt;SocketAddr&gt;() {
+                <span class="prelude-val">Ok</span>(addr) =&gt; addr,
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="macro">panic!</span>(<span class="string">"`{}` {}"</span>, host, e);
+                }
+            };
+            <span class="macro">tracing::info!</span>(<span class="string">"Listening on {}"</span>, addr);
 
-        axum::serve(TcpListener::bind(<span class="kw-2">&amp;</span>addr).<span class="kw">await</span>.unwrap(), app)
-            .<span class="kw">await
-            </span>.unwrap();
-    } <span class="kw">else </span>{
-        <span class="macro">tracing::error!</span>(<span class="string">"Can't create an application!"</span>);
+            axum::serve(TcpListener::bind(<span class="kw-2">&amp;</span>addr).<span class="kw">await</span>.unwrap(), app)
+                .<span class="kw">await
+                </span>.unwrap();
+        }
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">tracing::error!</span>(<span class="string">"Can't create an application: {}"</span>, e);
+        }
     }
 }
 </code></pre></div></section></main></body></html>

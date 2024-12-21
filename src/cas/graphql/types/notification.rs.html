@@ -477,7 +477,7 @@
                 <span class="kw">let </span>row = rows[<span class="number">0</span>].clone();
                 <span class="prelude-val">Ok</span>(row.get(<span class="string">"id"</span>))
             }
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(AppError::Database),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(AppError::Database(e.to_string())),
         }
     }
 }
