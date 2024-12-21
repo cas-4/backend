@@ -11,7 +11,7 @@ use serde_json::json;
 #[derive(Debug)]
 pub enum AppError {
     /// Database error
-    Database,
+    Database(String),
     /// Generic bad request. It is handled with a message value
     BadRequest(String),
     /// Not found error
@@ -33,9 +33,9 @@ impl IntoResponse for AppError {
     /// ```
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AppError::Database => (
+            AppError::Database(value) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Error with database connection".to_string(),
+                format!("Error with database connection: {value}"),
             ),
             AppError::BadRequest(value) => (StatusCode::BAD_REQUEST, value),
             AppError::NotFound(value) => (StatusCode::NOT_FOUND, value),
@@ -73,7 +73,7 @@ impl From<std::io::Error> for AppError {
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AppError::Database => write!(f, "Database"),
+            AppError::Database(value) => write!(f, "Database: {}", value),
             AppError::BadRequest(value) => write!(f, "BadRequest: {}", value),
             AppError::NotFound(value) => write!(f, "Not found: {}", value),
             AppError::TokenCreation => write!(f, "Token creation"),
@@ -85,8 +85,8 @@ impl fmt::Display for AppError {
 
 /// A tokio_postgres error is mapped to an `AppError::Database`
 impl From<tokio_postgres::Error> for AppError {
-    fn from(_: tokio_postgres::Error) -> Self {
-        AppError::Database
+    fn from(value: tokio_postgres::Error) -> Self {
+        AppError::Database(value.to_string())
     }
 }
 

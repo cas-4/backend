@@ -128,7 +128,7 @@ impl Notification {
                 let row = rows[0].clone();
                 Ok(row.get("id"))
             }
-            Err(_) => Err(AppError::Database),
+            Err(e) => Err(AppError::Database(e.to_string())),
         }
     }
 }

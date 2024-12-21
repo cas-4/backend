@@ -81,21 +81,24 @@ async fn create_app() -> Result<Router, AppError> {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    if let Ok(app) = create_app().await {
-        let host = &CONFIG.allowed_host;
+    match create_app().await {
+        Ok(app) => {
+            let host = &CONFIG.allowed_host;
 
-        let addr = match host.parse::<SocketAddr>() {
-            Ok(addr) => addr,
-            Err(e) => {
-                panic!("`{}` {}", host, e);
-            }
-        };
-        tracing::info!("Listening on {}", addr);
+            let addr = match host.parse::<SocketAddr>() {
+                Ok(addr) => addr,
+                Err(e) => {
+                    panic!("`{}` {}", host, e);
+                }
+            };
+            tracing::info!("Listening on {}", addr);
 
-        axum::serve(TcpListener::bind(&addr).await.unwrap(), app)
-            .await
-            .unwrap();
-    } else {
-        tracing::error!("Can't create an application!");
+            axum::serve(TcpListener::bind(&addr).await.unwrap(), app)
+                .await
+                .unwrap();
+        }
+        Err(e) => {
+            tracing::error!("Can't create an application: {}", e);
+        }
     }
 }
