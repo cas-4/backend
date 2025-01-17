@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/audio.rs`."><title>audio.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-b0742ba02757f159.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cas" data-themes="" data-resource-suffix="" data-rustdoc-version="1.83.0 (90b35a623 2024-11-26)" data-channel="1.83.0" data-search-js="search-f0d225181b97f9a4.js" data-settings-js="settings-805db61a62df4bd2.js" ><script src="../../static.files/storage-1d39b6787ed640ff.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-f070b9041d14864c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-0111fcff984fae8f.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">cas/</div>audio.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/audio.rs`."><title>audio.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cas" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0 (9fc6b4312 2025-01-07)" data-channel="1.84.0" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">cas/</div>audio.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -90,9 +90,7 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::config::CONFIG;
+<a href="#92" id="92">92</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::config::CONFIG;
 <span class="kw">use </span>axum::{
     extract::Path,
     http::{HeaderMap, HeaderName, HeaderValue, StatusCode},
@@ -109,8 +107,7 @@
     <span class="kw">let </span>url = <span class="string">"https://api.v7.unrealspeech.com/stream"</span>;
     <span class="kw">let </span>api_key = <span class="macro">format!</span>(<span class="string">"Bearer {}"</span>, CONFIG.unrealspeech_token);
 
-    <span class="comment">// Request JSON body
-    </span><span class="kw">let </span>body = <span class="macro">serde_json::json!</span>({
+    <span class="kw">let </span>body = <span class="macro">serde_json::json!</span>({
         <span class="string">"Text"</span>: text,
         <span class="string">"VoiceId"</span>: <span class="string">"Will"</span>,
         <span class="string">"Bitrate"</span>: <span class="string">"192k"</span>,
@@ -119,30 +116,31 @@
         <span class="string">"Codec"</span>: <span class="string">"libmp3lame"</span>,
     });
 
-    <span class="comment">// Send POST request
-    </span><span class="kw">let </span>client = reqwest::Client::new();
-    <span class="kw">let </span>response;
-
-    <span class="kw">match </span>client
+    <span class="kw">let </span>client = reqwest::Client::new();
+    <span class="kw">let </span>response = client
         .post(url)
         .header(AUTHORIZATION, api_key)
         .json(<span class="kw-2">&amp;</span>body)
         .send()
         .<span class="kw">await
-    </span>{
-        <span class="prelude-val">Ok</span>(r) =&gt; response = r,
-        <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"Error creating new audio: {}"</span>, e));
-        }
-    };
+        </span>.map_err(|e| <span class="macro">format!</span>(<span class="string">"Error creating new audio: {}"</span>, e))<span class="question-mark">?</span>;
 
-    <span class="comment">// Check for successful response
-    </span><span class="kw">if </span>response.status().is_success() {
+    <span class="kw">if </span>response.status().is_success() {
         <span class="kw">let </span>filepath = <span class="macro">format!</span>(<span class="string">"{}/{}"</span>, CONFIG.audio_path, filename);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(parent) = StdPath::new(<span class="kw-2">&amp;</span>filepath).parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| <span class="macro">format!</span>(<span class="string">"Failed to create directories: {}"</span>, e))<span class="question-mark">?</span>;
+        }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(filepath).unwrap();
-        <span class="kw">let </span>content = response.bytes().<span class="kw">await</span>.unwrap();
-        <span class="kw">let _ </span>= file.write_all(<span class="kw-2">&amp;</span>content);
+        <span class="kw">let </span><span class="kw-2">mut </span>file =
+            File::create(<span class="kw-2">&amp;</span>filepath).map_err(|e| <span class="macro">format!</span>(<span class="string">"Failed to create file: {}"</span>, e))<span class="question-mark">?</span>;
+        <span class="kw">let </span>content = response
+            .bytes()
+            .<span class="kw">await
+            </span>.map_err(|e| <span class="macro">format!</span>(<span class="string">"Failed to get response bytes: {}"</span>, e))<span class="question-mark">?</span>;
+        file.write_all(<span class="kw-2">&amp;</span>content)
+            .map_err(|e| <span class="macro">format!</span>(<span class="string">"Failed to write file: {}"</span>, e))<span class="question-mark">?</span>;
+
         <span class="prelude-val">Ok</span>(())
     } <span class="kw">else </span>{
         <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"Failed to fetch the audio: {}"</span>, response.status()))
@@ -154,19 +152,17 @@
     Path(id): Path&lt;String&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(HeaderMap, Vec&lt;u8&gt;), (StatusCode, String)&gt; {
     <span class="kw">let </span>index = id.find(<span class="string">'.'</span>).unwrap_or(usize::MAX);
-
-    <span class="kw">let </span><span class="kw-2">mut </span>ext_name = <span class="string">"xxx"</span>;
-    <span class="kw">if </span>index != usize::MAX {
-        ext_name = <span class="kw-2">&amp;</span>id[index + <span class="number">1</span>..];
-    }
+    <span class="kw">let </span>ext_name = <span class="kw">if </span>index != usize::MAX {
+        <span class="kw-2">&amp;</span>id[index + <span class="number">1</span>..]
+    } <span class="kw">else </span>{
+        <span class="string">"xxx"
+    </span>};
 
     <span class="kw">let </span><span class="kw-2">mut </span>headers = HeaderMap::new();
-
     <span class="kw">if </span>[<span class="string">"mp3"</span>].contains(<span class="kw-2">&amp;</span>ext_name) {
-        <span class="kw">let </span>content_type = <span class="string">"audio/mpeg"</span>;
         headers.insert(
             HeaderName::from_static(<span class="string">"content-type"</span>),
-            HeaderValue::from_str(content_type).unwrap(),
+            HeaderValue::from_str(<span class="string">"audio/mpeg"</span>).unwrap(),
         );
     }
 
@@ -177,13 +173,13 @@
         <span class="kw">return </span><span class="prelude-val">Err</span>((StatusCode::NOT_FOUND, <span class="string">"File not found"</span>.to_string()));
     }
 
-    <span class="comment">// Read the file and return its content
-    </span><span class="kw">match </span>fs::read(file_path) {
-        <span class="prelude-val">Ok</span>(file_content) =&gt; <span class="prelude-val">Ok</span>((headers, file_content)),
-        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            <span class="string">"Failed to read file"</span>.to_string(),
-        )),
-    }
+    fs::read(file_path)
+        .map(|file_content| (headers, file_content))
+        .map_err(|<span class="kw">_</span>| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                <span class="string">"Failed to read file"</span>.to_string(),
+            )
+        })
 }
 </code></pre></div></section></main></body></html>
