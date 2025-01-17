@@ -15,7 +15,6 @@ pub async fn tts(text: String, filename: String) -> Result<(), String> {
     let url = "https://api.v7.unrealspeech.com/stream";
     let api_key = format!("Bearer {}", CONFIG.unrealspeech_token);
 
-    // Request JSON body
     let body = serde_json::json!({
         "Text": text,
         "VoiceId": "Will",
@@ -25,30 +24,31 @@ pub async fn tts(text: String, filename: String) -> Result<(), String> {
         "Codec": "libmp3lame",
     });
 
-    // Send POST request
     let client = reqwest::Client::new();
-    let response;
-
-    match client
+    let response = client
         .post(url)
         .header(AUTHORIZATION, api_key)
         .json(&body)
         .send()
         .await
-    {
-        Ok(r) => response = r,
-        Err(e) => {
-            return Err(format!("Error creating new audio: {}", e));
-        }
-    };
+        .map_err(|e| format!("Error creating new audio: {}", e))?;
 
-    // Check for successful response
     if response.status().is_success() {
         let filepath = format!("{}/{}", CONFIG.audio_path, filename);
+        if let Some(parent) = StdPath::new(&filepath).parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directories: {}", e))?;
+        }
 
-        let mut file = File::create(filepath).unwrap();
-        let content = response.bytes().await.unwrap();
-        let _ = file.write_all(&content);
+        let mut file =
+            File::create(&filepath).map_err(|e| format!("Failed to create file: {}", e))?;
+        let content = response
+            .bytes()
+            .await
+            .map_err(|e| format!("Failed to get response bytes: {}", e))?;
+        file.write_all(&content)
+            .map_err(|e| format!("Failed to write file: {}", e))?;
+
         Ok(())
     } else {
         Err(format!("Failed to fetch the audio: {}", response.status()))
@@ -60,19 +60,17 @@ pub async fn show_file(
     Path(id): Path<String>,
 ) -> Result<(HeaderMap, Vec<u8>), (StatusCode, String)> {
     let index = id.find('.').unwrap_or(usize::MAX);
-
-    let mut ext_name = "xxx";
-    if index != usize::MAX {
-        ext_name = &id[index + 1..];
-    }
+    let ext_name = if index != usize::MAX {
+        &id[index + 1..]
+    } else {
+        "xxx"
+    };
 
     let mut headers = HeaderMap::new();
-
     if ["mp3"].contains(&ext_name) {
-        let content_type = "audio/mpeg";
         headers.insert(
             HeaderName::from_static("content-type"),
-            HeaderValue::from_str(content_type).unwrap(),
+            HeaderValue::from_str("audio/mpeg").unwrap(),
         );
     }
 
@@ -83,12 +81,12 @@ pub async fn show_file(
         return Err((StatusCode::NOT_FOUND, "File not found".to_string()));
     }
 
-    // Read the file and return its content
-    match fs::read(file_path) {
-        Ok(file_content) => Ok((headers, file_content)),
-        Err(_) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to read file".to_string(),
-        )),
-    }
+    fs::read(file_path)
+        .map(|file_content| (headers, file_content))
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to read file".to_string(),
+            )
+        })
 }
