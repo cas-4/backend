@@ -34,6 +34,9 @@ CREATE TABLE alerts(
     text1 text NOT NULL,
     text2 text NOT NULL,
     text3 text NOT NULL,
+    audio1 bytea NOT NULL,
+    audio2 bytea NOT NULL,
+    audio3 bytea NOT NULL,
     reached_users INTEGER DEFAULT 0 NOT NULL,
     PRIMARY KEY(id),
     CONSTRAINT fk_users_id 

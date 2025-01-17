@@ -186,6 +186,9 @@ pub mod query {
                                 a.text1 as alert_text1,
                                 a.text2 as alert_text2,
                                 a.text3 as alert_text3,
+                                a.audio1 as alert_audio1,
+                                a.audio2 as alert_audio2,
+                                a.audio3 as alert_audio3,
                                 a.reached_users as alert_reached_users
                         FROM notifications n
                         JOIN alerts a ON n.alert_id = a.id".to_string();
@@ -242,6 +245,9 @@ pub mod query {
                             text1: row.get("alert_text1"),
                             text2: row.get("alert_text2"),
                             text3: row.get("alert_text3"),
+                            audio1: row.get("alert_audio1"),
+                            audio2: row.get("alert_audio2"),
+                            audio3: row.get("alert_audio3"),
                             reached_users: row.get("alert_reached_users"),
                         },
                         seen: row.get("seen"),
@@ -296,6 +302,9 @@ pub mod mutations {
                                 a.text1 as alert_text1,
                                 a.text2 as alert_text2,
                                 a.text3 as alert_text3,
+                                a.audio1 as alert_audio1,
+                                a.audio2 as alert_audio2,
+                                a.audio3 as alert_audio3,
                                 a.reached_users as alert_reached_users
                         FROM notifications n
                         JOIN alerts a ON n.alert_id = a.id
@@ -316,6 +325,9 @@ pub mod mutations {
                             text1: row.get("alert_text1"),
                             text2: row.get("alert_text2"),
                             text3: row.get("alert_text3"),
+                            audio1: row.get("alert_audio1"),
+                            audio2: row.get("alert_audio2"),
+                            audio3: row.get("alert_audio3"),
                             reached_users: row.get("alert_reached_users"),
                         },
                         seen: row.get("seen"),

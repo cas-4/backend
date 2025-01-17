@@ -32,8 +32,6 @@ Now you set up some env variables:
 - `UNREALSPEECH_TOKEN`: used by [Unrealspeech](https://unrealspeech.com) for
   text-to-speach API.
 
-- `AUDIO_PATH`: folder path where to store audios
-
 After that you must copy the `schema/init.sql` file into the database.
 
 Now just run the app

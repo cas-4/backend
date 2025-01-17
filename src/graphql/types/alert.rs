@@ -29,6 +29,9 @@ pub struct Alert {
     pub text1: String,
     pub text2: String,
     pub text3: String,
+    pub audio1: Vec<u8>,
+    pub audio2: Vec<u8>,
+    pub audio3: Vec<u8>,
     pub reached_users: i32,
 }
 
@@ -82,6 +85,9 @@ pub mod query {
                                     text1,
                                     text2,
                                     text3,
+                                    audio1,
+                                    audio2,
+                                    audio3,
                                     reached_users
                                 FROM alerts
                                 WHERE id = $1",
@@ -101,6 +107,9 @@ pub mod query {
                                     text1,
                                     text2,
                                     text3,
+                                    audio1,
+                                    audio2,
+                                    audio3,
                                     reached_users
                                 FROM alerts
                                 ORDER BY id DESC
@@ -124,6 +133,9 @@ pub mod query {
                         text1: row.get("text1"),
                         text2: row.get("text2"),
                         text3: row.get("text3"),
+                        audio1: row.get("audio1"),
+                        audio2: row.get("audio2"),
+                        audio3: row.get("audio3"),
                         reached_users: row.get("reached_users"),
                     })
                     .collect();
@@ -190,6 +202,7 @@ pub mod mutations {
                             ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
                             ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
                             text1, text2, text3,
+                            audio1, audio2, audio3,
                             reached_users
                         FROM alerts WHERE area = {} AND created_at >= NOW() - INTERVAL '10 MINUTE'",
                         polygon
@@ -207,6 +220,9 @@ pub mod mutations {
                         text1: row.get("text1"),
                         text2: row.get("text2"),
                         text3: row.get("text3"),
+                        audio1: row.get("audio1"),
+                        audio2: row.get("audio2"),
+                        audio3: row.get("audio3"),
                         reached_users: row.get("reached_users"),
                     })
                     .collect::<Vec<Alert>>()
@@ -215,15 +231,40 @@ pub mod mutations {
                         return Ok(previous_alert);
                 }
 
+                let audio1 = match audio::tts(&input.text1).await {
+                    Ok(content) => content,
+                    Err(e) => {
+                        tracing::error!("Error for `{}`: {}", &input.text1, e);
+                        bytes::Bytes::new()
+                    }
+                };
+
+                let audio2 = match audio::tts(&input.text2).await {
+                    Ok(content) => content,
+                    Err(e) => {
+                        tracing::error!("Error for `{}`: {}", &input.text2, e);
+                        bytes::Bytes::new()
+                    }
+                };
+
+                let audio3 = match audio::tts(&input.text3).await {
+                    Ok(content) => content,
+                    Err(e) => {
+                        tracing::error!("Error for `{}`: {}", &input.text3, e);
+                        bytes::Bytes::new()
+                    }
+                };
+
                 let insert_query = format!(
-                    "INSERT INTO alerts (user_id, area, text1, text2, text3)
-                    VALUES($1, {}, $2, $3, $4)
+                    "INSERT INTO alerts (user_id, area, text1, text2, text3, audio1, audio2, audio3)
+                    VALUES($1, {}, $2, $3, $4, $5, $6, $7)
                     RETURNING
                     id, user_id, extract(epoch from created_at)::double precision as created_at,
                     ST_AsText(area) as area,
                     ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
                     ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
                     text1, text2, text3,
+                    audio1, audio2, audio3,
                     reached_users",
                     polygon
                 );
@@ -231,7 +272,15 @@ pub mod mutations {
                 let rows = client
                     .query(
                         &insert_query,
-                        &[&claims.user_id, &input.text1, &input.text2, &input.text3],
+                        &[
+                            &claims.user_id,
+                            &input.text1,
+                            &input.text2,
+                            &input.text3,
+                            &audio1.to_vec(),
+                            &audio2.to_vec(),
+                            &audio3.to_vec(),
+                        ],
                     )
                     .await?;
                 let mut alert = rows
@@ -246,6 +295,9 @@ pub mod mutations {
                         text1: row.get("text1"),
                         text2: row.get("text2"),
                         text3: row.get("text3"),
+                        audio1: row.get("audio1"),
+                        audio2: row.get("audio2"),
+                        audio3: row.get("audio3"),
                         reached_users: row.get("reached_users"),
                     })
                     .collect::<Vec<Alert>>()
@@ -311,7 +363,7 @@ pub mod mutations {
                         let notification = Notification::insert_db(
                             client,
                             alert.id,
-                            &p,
+                            p,
                             LevelAlert::from_str(level.text).unwrap(),
                         )
                         .await?;
@@ -362,44 +414,6 @@ pub mod mutations {
                         &[&alert.reached_users, &alert.id],
                     )
                     .await?;
-
-                if let Err(e) = audio::tts(
-                    alert.text1.clone(),
-                    format!("alert-{}-text-1.mp3", alert.id),
-                )
-                .await
-                {
-                    tracing::error!(
-                        "Error for `{}`: {}",
-                        format!("alert-{}-text-1.mp3", alert.id),
-                        e
-                    );
-                }
-
-                if let Err(e) = audio::tts(
-                    alert.text2.clone(),
-                    format!("alert-{}-text-2.mp3", alert.id),
-                )
-                .await
-                {
-                    tracing::error!(
-                        "Error for `{}`: {}",
-                        format!("alert-{}-text-2.mp3", alert.id),
-                        e
-                    );
-                }
-                if let Err(e) = audio::tts(
-                    alert.text3.clone(),
-                    format!("alert-{}-text-3.mp3", alert.id),
-                )
-                .await
-                {
-                    tracing::error!(
-                        "Error for `{}`: {}",
-                        format!("alert-{}-text-3.mp3", alert.id),
-                        e
-                    );
-                }
 
                 Ok(alert)
             }

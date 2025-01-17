@@ -14,7 +14,7 @@ use crate::config::CONFIG;
 use async_graphql::{EmptySubscription, Schema};
 use axum::{
     http::{header, Method, Request},
-    routing::{get, post},
+    routing::post,
     Extension, Router,
 };
 use errors::AppError;
@@ -47,7 +47,6 @@ async fn create_app() -> Result<Router, AppError> {
     .finish();
 
     Ok(Router::new()
-        .route("/assets/sounds/:id", get(audio::show_file))
         .route(
             "/graphql",
             post(graphql::routes::graphql_handler).layer(Extension(schema.clone())),

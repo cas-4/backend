@@ -17,9 +17,6 @@ RUN apt-get update && apt-get install -y libssl-dev ca-certificates
 RUN groupadd -g 999 appuser && \
     useradd -r -u 999 -g appuser appuser
 
-RUN mkdir -p /app/assets
-RUN chown -R appuser:appuser /app/assets
-
 USER appuser
 
 COPY --from=builder /app/target/release/cas /app
