@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["show_file","tts"]};
+window.SIDEBAR_ITEMS = {"fn":["tts"]};

@@ -36,10 +36,7 @@
 <a href="#35" id="35">35</a>
 <a href="#36" id="36">36</a>
 <a href="#37" id="37">37</a>
-<a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a>
-<a href="#40" id="40">40</a>
-<a href="#41" id="41">41</a></pre></div><pre class="rust"><code><span class="kw">use </span>config::ConfigError;
+<a href="#38" id="38">38</a></pre></div><pre class="rust"><code><span class="kw">use </span>config::ConfigError;
 <span class="kw">use </span>lazy_static::lazy_static;
 <span class="kw">use </span>serde::Deserialize;
 
@@ -63,9 +60,6 @@
 
     <span class="doccomment">/// Token used for text-to-speach API
     </span><span class="kw">pub </span>unrealspeech_token: String,
-
-    <span class="doccomment">/// Audio folder path
-    </span><span class="kw">pub </span>audio_path: String,
 }
 
 <span class="kw">impl </span>Configuration {

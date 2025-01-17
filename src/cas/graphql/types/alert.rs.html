@@ -406,7 +406,21 @@
 <a href="#405" id="405">405</a>
 <a href="#406" id="406">406</a>
 <a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     expo,
     graphql::types::{
@@ -437,6 +451,9 @@
     <span class="kw">pub </span>text1: String,
     <span class="kw">pub </span>text2: String,
     <span class="kw">pub </span>text3: String,
+    <span class="kw">pub </span>audio1: Vec&lt;u8&gt;,
+    <span class="kw">pub </span>audio2: Vec&lt;u8&gt;,
+    <span class="kw">pub </span>audio3: Vec&lt;u8&gt;,
     <span class="kw">pub </span>reached_users: i32,
 }
 
@@ -490,6 +507,9 @@
                                     text1,
                                     text2,
                                     text3,
+                                    audio1,
+                                    audio2,
+                                    audio3,
                                     reached_users
                                 FROM alerts
                                 WHERE id = $1"</span>,
@@ -509,6 +529,9 @@
                                     text1,
                                     text2,
                                     text3,
+                                    audio1,
+                                    audio2,
+                                    audio3,
                                     reached_users
                                 FROM alerts
                                 ORDER BY id DESC
@@ -532,6 +555,9 @@
                         text1: row.get(<span class="string">"text1"</span>),
                         text2: row.get(<span class="string">"text2"</span>),
                         text3: row.get(<span class="string">"text3"</span>),
+                        audio1: row.get(<span class="string">"audio1"</span>),
+                        audio2: row.get(<span class="string">"audio2"</span>),
+                        audio3: row.get(<span class="string">"audio3"</span>),
                         reached_users: row.get(<span class="string">"reached_users"</span>),
                     })
                     .collect();
@@ -598,6 +624,7 @@
                             ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
                             ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
                             text1, text2, text3,
+                            audio1, audio2, audio3,
                             reached_users
                         FROM alerts WHERE area = {} AND created_at &gt;= NOW() - INTERVAL '10 MINUTE'"</span>,
                         polygon
@@ -615,6 +642,9 @@
                         text1: row.get(<span class="string">"text1"</span>),
                         text2: row.get(<span class="string">"text2"</span>),
                         text3: row.get(<span class="string">"text3"</span>),
+                        audio1: row.get(<span class="string">"audio1"</span>),
+                        audio2: row.get(<span class="string">"audio2"</span>),
+                        audio3: row.get(<span class="string">"audio3"</span>),
                         reached_users: row.get(<span class="string">"reached_users"</span>),
                     })
                     .collect::&lt;Vec&lt;Alert&gt;&gt;()
@@ -623,15 +653,40 @@
                         <span class="kw">return </span><span class="prelude-val">Ok</span>(previous_alert);
                 }
 
+                <span class="kw">let </span>audio1 = <span class="kw">match </span>audio::tts(<span class="kw-2">&amp;</span>input.text1).<span class="kw">await </span>{
+                    <span class="prelude-val">Ok</span>(content) =&gt; content,
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">tracing::error!</span>(<span class="string">"Error for `{}`: {}"</span>, <span class="kw-2">&amp;</span>input.text1, e);
+                        bytes::Bytes::new()
+                    }
+                };
+
+                <span class="kw">let </span>audio2 = <span class="kw">match </span>audio::tts(<span class="kw-2">&amp;</span>input.text2).<span class="kw">await </span>{
+                    <span class="prelude-val">Ok</span>(content) =&gt; content,
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">tracing::error!</span>(<span class="string">"Error for `{}`: {}"</span>, <span class="kw-2">&amp;</span>input.text2, e);
+                        bytes::Bytes::new()
+                    }
+                };
+
+                <span class="kw">let </span>audio3 = <span class="kw">match </span>audio::tts(<span class="kw-2">&amp;</span>input.text3).<span class="kw">await </span>{
+                    <span class="prelude-val">Ok</span>(content) =&gt; content,
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">tracing::error!</span>(<span class="string">"Error for `{}`: {}"</span>, <span class="kw-2">&amp;</span>input.text3, e);
+                        bytes::Bytes::new()
+                    }
+                };
+
                 <span class="kw">let </span>insert_query = <span class="macro">format!</span>(
-                    <span class="string">"INSERT INTO alerts (user_id, area, text1, text2, text3)
-                    VALUES($1, {}, $2, $3, $4)
+                    <span class="string">"INSERT INTO alerts (user_id, area, text1, text2, text3, audio1, audio2, audio3)
+                    VALUES($1, {}, $2, $3, $4, $5, $6, $7)
                     RETURNING
                     id, user_id, extract(epoch from created_at)::double precision as created_at,
                     ST_AsText(area) as area,
                     ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
                     ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
                     text1, text2, text3,
+                    audio1, audio2, audio3,
                     reached_users"</span>,
                     polygon
                 );
@@ -639,7 +694,15 @@
                 <span class="kw">let </span>rows = client
                     .query(
                         <span class="kw-2">&amp;</span>insert_query,
-                        <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>claims.user_id, <span class="kw-2">&amp;</span>input.text1, <span class="kw-2">&amp;</span>input.text2, <span class="kw-2">&amp;</span>input.text3],
+                        <span class="kw-2">&amp;</span>[
+                            <span class="kw-2">&amp;</span>claims.user_id,
+                            <span class="kw-2">&amp;</span>input.text1,
+                            <span class="kw-2">&amp;</span>input.text2,
+                            <span class="kw-2">&amp;</span>input.text3,
+                            <span class="kw-2">&amp;</span>audio1.to_vec(),
+                            <span class="kw-2">&amp;</span>audio2.to_vec(),
+                            <span class="kw-2">&amp;</span>audio3.to_vec(),
+                        ],
                     )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span><span class="kw-2">mut </span>alert = rows
@@ -654,6 +717,9 @@
                         text1: row.get(<span class="string">"text1"</span>),
                         text2: row.get(<span class="string">"text2"</span>),
                         text3: row.get(<span class="string">"text3"</span>),
+                        audio1: row.get(<span class="string">"audio1"</span>),
+                        audio2: row.get(<span class="string">"audio2"</span>),
+                        audio3: row.get(<span class="string">"audio3"</span>),
                         reached_users: row.get(<span class="string">"reached_users"</span>),
                     })
                     .collect::&lt;Vec&lt;Alert&gt;&gt;()
@@ -719,7 +785,7 @@
                         <span class="kw">let </span>notification = Notification::insert_db(
                             client,
                             alert.id,
-                            <span class="kw-2">&amp;</span>p,
+                            p,
                             LevelAlert::from_str(level.text).unwrap(),
                         )
                         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -770,44 +836,6 @@
                         <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>alert.reached_users, <span class="kw-2">&amp;</span>alert.id],
                     )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
-
-                <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audio::tts(
-                    alert.text1.clone(),
-                    <span class="macro">format!</span>(<span class="string">"alert-{}-text-1.mp3"</span>, alert.id),
-                )
-                .<span class="kw">await
-                </span>{
-                    <span class="macro">tracing::error!</span>(
-                        <span class="string">"Error for `{}`: {}"</span>,
-                        <span class="macro">format!</span>(<span class="string">"alert-{}-text-1.mp3"</span>, alert.id),
-                        e
-                    );
-                }
-
-                <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audio::tts(
-                    alert.text2.clone(),
-                    <span class="macro">format!</span>(<span class="string">"alert-{}-text-2.mp3"</span>, alert.id),
-                )
-                .<span class="kw">await
-                </span>{
-                    <span class="macro">tracing::error!</span>(
-                        <span class="string">"Error for `{}`: {}"</span>,
-                        <span class="macro">format!</span>(<span class="string">"alert-{}-text-2.mp3"</span>, alert.id),
-                        e
-                    );
-                }
-                <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audio::tts(
-                    alert.text3.clone(),
-                    <span class="macro">format!</span>(<span class="string">"alert-{}-text-3.mp3"</span>, alert.id),
-                )
-                .<span class="kw">await
-                </span>{
-                    <span class="macro">tracing::error!</span>(
-                        <span class="string">"Error for `{}`: {}"</span>,
-                        <span class="macro">format!</span>(<span class="string">"alert-{}-text-3.mp3"</span>, alert.id),
-                        e
-                    );
-                }
 
                 <span class="prelude-val">Ok</span>(alert)
             }
