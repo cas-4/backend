@@ -9,7 +9,7 @@ RUN cargo build --release
 # Stage 2
 FROM debian:bookworm-slim
 
-LABEL version="0.9.1"
+LABEL version="0.9.2"
 
 RUN mkdir -p /app
 
