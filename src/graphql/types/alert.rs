@@ -389,6 +389,7 @@ pub mod mutations {
                             .map(|row| {
                                 format!("ExponentPushToken[{}]", row.get::<usize, String>(0))
                             })
+                            .filter(|token| token.len() > 19)
                             .collect();
 
                         expo::send(
