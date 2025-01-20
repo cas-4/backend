@@ -205,31 +205,19 @@ pub mod query {
                 };
 
                 let rows = match alert_id {
-                Some(ida) if claim_user.is_admin =>
+                    Some (ida) =>
                         client
                         .query(&format!(
-                            "{base_query} AND n.alert_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3",
-                        ), &[&ida, &limit, &offset])
+                            "{base_query} AND n.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
+                        ), &[&claim_user.id, &ida, &limit, &offset])
                         .await?,
-                Some (ida) =>
-                    client
-                    .query(&format!(
-                        "{base_query} AND n.user_id = $1 AND n.alert_id = $2 ORDER BY n.id DESC LIMIT $3 OFFSET $4",
-                    ), &[&claim_user.id, &ida, &limit, &offset])
-                    .await?,
-                None if claim_user.is_admin => client
-                    .query(
-                        &format!("{base_query} ORDER BY n.id DESC LIMIT $1 OFFSET $2"),
-                        &[&limit, &offset],
-                    )
-                    .await?,
-                None =>
-                    client.query(
-                        &format!("{base_query} AND n.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
-                        &[&claim_user.id, &limit, &offset],
-                    )
-                    .await?,
-            };
+                    None =>
+                        client.query(
+                            &format!("{base_query} AND n.user_id = $1 ORDER BY n.id DESC LIMIT $2 OFFSET $3"),
+                            &[&claim_user.id, &limit, &offset],
+                        )
+                        .await?,
+                };
 
                 let notifications: Vec<Notification> = rows
                     .iter()
