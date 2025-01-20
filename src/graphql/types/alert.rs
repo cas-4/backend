@@ -389,21 +389,22 @@ pub mod mutations {
                             .map(|row| {
                                 format!("ExponentPushToken[{}]", row.get::<usize, String>(0))
                             })
-                            .filter(|token| token.len() > 19)
                             .collect();
 
-                        expo::send(
-                            (*state.expo).clone(),
-                            tokens,
-                            "New Alert!".to_string(),
-                            match level.text {
-                                "One" => alert.text1.clone(),
-                                "Two" => alert.text2.clone(),
-                                "Three" => alert.text3.clone(),
-                                _ => "Check it out in app!".to_string(),
-                            },
-                        )
-                        .await?;
+                        if tokens.len() > 0 {
+                            expo::send(
+                                (*state.expo).clone(),
+                                tokens,
+                                "New Alert!".to_string(),
+                                match level.text {
+                                    "One" => alert.text1.clone(),
+                                    "Two" => alert.text2.clone(),
+                                    "Three" => alert.text3.clone(),
+                                    _ => "Check it out in app!".to_string(),
+                                },
+                            )
+                            .await?;
+                        }
                     }
 
                     alerted_positions.extend(positions.iter().map(|p| p.id).collect::<Vec<i32>>());
