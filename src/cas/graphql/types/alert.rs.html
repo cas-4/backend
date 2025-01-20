@@ -421,7 +421,8 @@
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     expo,
     graphql::types::{
@@ -812,21 +813,22 @@
                             .map(|row| {
                                 <span class="macro">format!</span>(<span class="string">"ExponentPushToken[{}]"</span>, row.get::&lt;usize, String&gt;(<span class="number">0</span>))
                             })
-                            .filter(|token| token.len() &gt; <span class="number">19</span>)
                             .collect();
 
-                        expo::send(
-                            (<span class="kw-2">*</span>state.expo).clone(),
-                            tokens,
-                            <span class="string">"New Alert!"</span>.to_string(),
-                            <span class="kw">match </span>level.text {
-                                <span class="string">"One" </span>=&gt; alert.text1.clone(),
-                                <span class="string">"Two" </span>=&gt; alert.text2.clone(),
-                                <span class="string">"Three" </span>=&gt; alert.text3.clone(),
-                                <span class="kw">_ </span>=&gt; <span class="string">"Check it out in app!"</span>.to_string(),
-                            },
-                        )
-                        .<span class="kw">await</span><span class="question-mark">?</span>;
+                        <span class="kw">if </span>tokens.len() &gt; <span class="number">0 </span>{
+                            expo::send(
+                                (<span class="kw-2">*</span>state.expo).clone(),
+                                tokens,
+                                <span class="string">"New Alert!"</span>.to_string(),
+                                <span class="kw">match </span>level.text {
+                                    <span class="string">"One" </span>=&gt; alert.text1.clone(),
+                                    <span class="string">"Two" </span>=&gt; alert.text2.clone(),
+                                    <span class="string">"Three" </span>=&gt; alert.text3.clone(),
+                                    <span class="kw">_ </span>=&gt; <span class="string">"Check it out in app!"</span>.to_string(),
+                                },
+                            )
+                            .<span class="kw">await</span><span class="question-mark">?</span>;
+                        }
                     }
 
                     alerted_positions.extend(positions.iter().map(|p| p.id).collect::&lt;Vec&lt;i32&gt;&gt;());
