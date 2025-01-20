@@ -420,7 +420,8 @@
 <a href="#419" id="419">419</a>
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     expo,
     graphql::types::{
@@ -811,6 +812,7 @@
                             .map(|row| {
                                 <span class="macro">format!</span>(<span class="string">"ExponentPushToken[{}]"</span>, row.get::&lt;usize, String&gt;(<span class="number">0</span>))
                             })
+                            .filter(|token| token.len() &gt; <span class="number">19</span>)
                             .collect();
 
                         expo::send(
