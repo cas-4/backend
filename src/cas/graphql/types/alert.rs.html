@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/graphql/types/alert.rs`."><title>alert.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="cas" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0 (9fc6b4312 2025-01-07)" data-channel="1.84.0" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">cas/graphql/types/</div>alert.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/graphql/types/alert.rs`."><title>alert.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="cas" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.1 (e71f9a9a9 2025-01-27)" data-channel="1.84.1" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">cas/graphql/types/</div>alert.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -422,7 +422,61 @@
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
 <a href="#423" id="423">423</a>
-<a href="#424" id="424">424</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     errors::AppError,
     expo,
     graphql::types::{
@@ -457,6 +511,7 @@
     <span class="kw">pub </span>audio2: Vec&lt;u8&gt;,
     <span class="kw">pub </span>audio3: Vec&lt;u8&gt;,
     <span class="kw">pub </span>reached_users: i32,
+    <span class="kw">pub </span>notifications: Vec&lt;Notification&gt;,
 }
 
 <span class="attr">#[derive(InputObject)]
@@ -497,72 +552,123 @@
             Authentication::NotLogged =&gt; <span class="prelude-val">Err</span>(AppError::Unauthorized),
             Authentication::Logged(<span class="kw">_</span>) =&gt; {
                 <span class="kw">let </span>rows = <span class="kw">match </span>id {
-                    <span class="prelude-val">Some</span>(id) =&gt; {
-                        client
-                            .query(
-                                <span class="string">"SELECT id,
-                                    user_id,
-                                    extract(epoch from created_at)::double precision as created_at,
-                                    ST_AsText(area) as area,
-                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                                    text1,
-                                    text2,
-                                    text3,
-                                    audio1,
-                                    audio2,
-                                    audio3,
-                                    reached_users
-                                FROM alerts
-                                WHERE id = $1"</span>,
-                                <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
-                            )
-                            .<span class="kw">await</span><span class="question-mark">?
-                    </span>}
-                    <span class="prelude-val">None </span>=&gt; {
-                        client
-                            .query(
-                                <span class="string">"SELECT id,
-                                    user_id,
-                                    extract(epoch from created_at)::double precision as created_at,
-                                    ST_AsText(area) as area,
-                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                                    text1,
-                                    text2,
-                                    text3,
-                                    audio1,
-                                    audio2,
-                                    audio3,
-                                    reached_users
-                                FROM alerts
-                                ORDER BY id DESC
-                                LIMIT $1
-                                OFFSET $2"</span>,
-                                <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)],
-                            )
-                            .<span class="kw">await</span><span class="question-mark">?
-                    </span>}
-                };
+                <span class="prelude-val">Some</span>(id) =&gt; {
+                    client
+                        .query(
+                            <span class="string">"SELECT a.id,
+                                a.user_id,
+                                extract(epoch from a.created_at)::double precision as created_at,
+                                ST_AsText(a.area) as area,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as area_level3,
+                                a.text1,
+                                a.text2,
+                                a.text3,
+                                a.audio1,
+                                a.audio2,
+                                a.audio3,
+                                a.reached_users,
+                                n.id as notification_id,
+                                n.alert_id as notification_alert_id,
+                                n.seen as notification_seen,
+                                extract(epoch from n.created_at)::double precision as notification_created_at,
+                                ST_Y(n.location::geometry) AS notification_latitude,
+                                ST_X(n.location::geometry) AS notification_longitude,
+                                n.activity as notification_activity,
+                                n.level as notification_level,
+                                n.user_id as notification_user_id
+                            FROM alerts a
+                            LEFT JOIN notifications n ON n.alert_id = a.id
+                            WHERE a.id = $1"</span>,
+                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>id],
+                        )
+                        .<span class="kw">await</span><span class="question-mark">?
+                </span>}
+                <span class="prelude-val">None </span>=&gt; {
+                    client
+                        .query(
+                            <span class="string">"SELECT a.id,
+                                a.user_id,
+                                extract(epoch from a.created_at)::double precision as created_at,
+                                ST_AsText(a.area) as area,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as area_level3,
+                                a.text1,
+                                a.text2,
+                                a.text3,
+                                a.audio1,
+                                a.audio2,
+                                a.audio3,
+                                a.reached_users,
+                                n.id as notification_id,
+                                n.alert_id as notification_alert_id,
+                                n.seen as notification_seen,
+                                extract(epoch from n.created_at)::double precision as notification_created_at,
+                                ST_Y(n.location::geometry) AS notification_latitude,
+                                ST_X(n.location::geometry) AS notification_longitude,
+                                n.activity as notification_activity,
+                                n.level as notification_level,
+                                n.user_id as notification_user_id
+                            FROM alerts a
+                            LEFT JOIN notifications n ON n.alert_id = a.id
+                            ORDER BY a.id DESC
+                            LIMIT $1
+                            OFFSET $2"</span>,
+                            <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>limit.unwrap_or(<span class="number">20</span>), <span class="kw-2">&amp;</span>offset.unwrap_or(<span class="number">0</span>)],
+                        )
+                        .<span class="kw">await</span><span class="question-mark">?
+                </span>}
+            };
 
-                <span class="kw">let </span>alerts: Vec&lt;Alert&gt; = rows
-                    .iter()
-                    .map(|row| Alert {
-                        id: row.get(<span class="string">"id"</span>),
-                        user_id: row.get(<span class="string">"user_id"</span>),
-                        created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
-                        area: row.get(<span class="string">"area"</span>),
-                        area_level2: row.get(<span class="string">"area_level2"</span>),
-                        area_level3: row.get(<span class="string">"area_level3"</span>),
-                        text1: row.get(<span class="string">"text1"</span>),
-                        text2: row.get(<span class="string">"text2"</span>),
-                        text3: row.get(<span class="string">"text3"</span>),
-                        audio1: row.get(<span class="string">"audio1"</span>),
-                        audio2: row.get(<span class="string">"audio2"</span>),
-                        audio3: row.get(<span class="string">"audio3"</span>),
-                        reached_users: row.get(<span class="string">"reached_users"</span>),
-                    })
-                    .collect();
+                <span class="kw">let </span><span class="kw-2">mut </span>alerts: Vec&lt;Alert&gt; = <span class="macro">vec!</span>[];
+                <span class="kw">let </span><span class="kw-2">mut </span>current_alert_id = <span class="prelude-val">None</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>current_alert = <span class="prelude-val">None</span>;
+
+                <span class="kw">for </span>row <span class="kw">in </span>rows {
+                    <span class="kw">let </span>alert_id: i32 = row.get(<span class="string">"id"</span>);
+                    <span class="kw">if </span>current_alert_id != <span class="prelude-val">Some</span>(alert_id) {
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(alert) = current_alert.take() {
+                            alerts.push(alert);
+                        }
+                        current_alert_id = <span class="prelude-val">Some</span>(alert_id);
+                        current_alert = <span class="prelude-val">Some</span>(Alert {
+                            id: row.get(<span class="string">"id"</span>),
+                            user_id: row.get(<span class="string">"user_id"</span>),
+                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"created_at"</span>) <span class="kw">as </span>i64,
+                            area: row.get(<span class="string">"area"</span>),
+                            area_level2: row.get(<span class="string">"area_level2"</span>),
+                            area_level3: row.get(<span class="string">"area_level3"</span>),
+                            text1: row.get(<span class="string">"text1"</span>),
+                            text2: row.get(<span class="string">"text2"</span>),
+                            text3: row.get(<span class="string">"text3"</span>),
+                            audio1: row.get(<span class="string">"audio1"</span>),
+                            audio2: row.get(<span class="string">"audio2"</span>),
+                            audio3: row.get(<span class="string">"audio3"</span>),
+                            reached_users: row.get(<span class="string">"reached_users"</span>),
+                            notifications: <span class="macro">vec!</span>[],
+                        });
+                    }
+
+                    <span class="comment">// Add the notification data to the notifications list
+                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(alert) = current_alert.as_mut() {
+                        <span class="kw">let </span>notification = Notification {
+                            id: row.get(<span class="string">"notification_id"</span>),
+                            alert: <span class="prelude-val">None</span>,
+                            user_id: row.get(<span class="string">"notification_user_id"</span>),
+                            latitude: row.get(<span class="string">"notification_latitude"</span>),
+                            longitude: row.get(<span class="string">"notification_longitude"</span>),
+                            moving_activity: row.get(<span class="string">"notification_activity"</span>),
+                            level: row.get(<span class="string">"notification_level"</span>),
+                            seen: row.get(<span class="string">"notification_seen"</span>),
+                            created_at: row.get::&lt;<span class="kw">_</span>, f64&gt;(<span class="string">"notification_created_at"</span>) <span class="kw">as </span>i64,
+                        };
+                        alert.notifications.push(notification);
+                    }
+                }
+
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(alert) = current_alert {
+                    alerts.push(alert);
+                }
 
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(alerts))
             }
@@ -648,6 +754,7 @@
                         audio2: row.get(<span class="string">"audio2"</span>),
                         audio3: row.get(<span class="string">"audio3"</span>),
                         reached_users: row.get(<span class="string">"reached_users"</span>),
+                        notifications: <span class="macro">vec!</span>[],
                     })
                     .collect::&lt;Vec&lt;Alert&gt;&gt;()
                     .first()
@@ -723,6 +830,7 @@
                         audio2: row.get(<span class="string">"audio2"</span>),
                         audio3: row.get(<span class="string">"audio3"</span>),
                         reached_users: row.get(<span class="string">"reached_users"</span>),
+                        notifications: <span class="macro">vec!</span>[],
                     })
                     .collect::&lt;Vec&lt;Alert&gt;&gt;()
                     .first()
