@@ -33,6 +33,7 @@ pub struct Alert {
     pub audio2: Vec<u8>,
     pub audio3: Vec<u8>,
     pub reached_users: i32,
+    pub notifications: Vec<Notification>,
 }
 
 #[derive(InputObject)]
@@ -73,72 +74,123 @@ pub mod query {
             Authentication::NotLogged => Err(AppError::Unauthorized),
             Authentication::Logged(_) => {
                 let rows = match id {
-                    Some(id) => {
-                        client
-                            .query(
-                                "SELECT id,
-                                    user_id,
-                                    extract(epoch from created_at)::double precision as created_at,
-                                    ST_AsText(area) as area,
-                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                                    text1,
-                                    text2,
-                                    text3,
-                                    audio1,
-                                    audio2,
-                                    audio3,
-                                    reached_users
-                                FROM alerts
-                                WHERE id = $1",
-                                &[&id],
-                            )
-                            .await?
-                    }
-                    None => {
-                        client
-                            .query(
-                                "SELECT id,
-                                    user_id,
-                                    extract(epoch from created_at)::double precision as created_at,
-                                    ST_AsText(area) as area,
-                                    ST_AsText(ST_Buffer(area::geography, 1000)) as area_level2,
-                                    ST_AsText(ST_Buffer(area::geography, 2000)) as area_level3,
-                                    text1,
-                                    text2,
-                                    text3,
-                                    audio1,
-                                    audio2,
-                                    audio3,
-                                    reached_users
-                                FROM alerts
-                                ORDER BY id DESC
-                                LIMIT $1
-                                OFFSET $2",
-                                &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
-                            )
-                            .await?
-                    }
-                };
+                Some(id) => {
+                    client
+                        .query(
+                            "SELECT a.id,
+                                a.user_id,
+                                extract(epoch from a.created_at)::double precision as created_at,
+                                ST_AsText(a.area) as area,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as area_level3,
+                                a.text1,
+                                a.text2,
+                                a.text3,
+                                a.audio1,
+                                a.audio2,
+                                a.audio3,
+                                a.reached_users,
+                                n.id as notification_id,
+                                n.alert_id as notification_alert_id,
+                                n.seen as notification_seen,
+                                extract(epoch from n.created_at)::double precision as notification_created_at,
+                                ST_Y(n.location::geometry) AS notification_latitude,
+                                ST_X(n.location::geometry) AS notification_longitude,
+                                n.activity as notification_activity,
+                                n.level as notification_level,
+                                n.user_id as notification_user_id
+                            FROM alerts a
+                            LEFT JOIN notifications n ON n.alert_id = a.id
+                            WHERE a.id = $1",
+                            &[&id],
+                        )
+                        .await?
+                }
+                None => {
+                    client
+                        .query(
+                            "SELECT a.id,
+                                a.user_id,
+                                extract(epoch from a.created_at)::double precision as created_at,
+                                ST_AsText(a.area) as area,
+                                ST_AsText(ST_Buffer(a.area::geography, 1000)) as area_level2,
+                                ST_AsText(ST_Buffer(a.area::geography, 2000)) as area_level3,
+                                a.text1,
+                                a.text2,
+                                a.text3,
+                                a.audio1,
+                                a.audio2,
+                                a.audio3,
+                                a.reached_users,
+                                n.id as notification_id,
+                                n.alert_id as notification_alert_id,
+                                n.seen as notification_seen,
+                                extract(epoch from n.created_at)::double precision as notification_created_at,
+                                ST_Y(n.location::geometry) AS notification_latitude,
+                                ST_X(n.location::geometry) AS notification_longitude,
+                                n.activity as notification_activity,
+                                n.level as notification_level,
+                                n.user_id as notification_user_id
+                            FROM alerts a
+                            LEFT JOIN notifications n ON n.alert_id = a.id
+                            ORDER BY a.id DESC
+                            LIMIT $1
+                            OFFSET $2",
+                            &[&limit.unwrap_or(20), &offset.unwrap_or(0)],
+                        )
+                        .await?
+                }
+            };
 
-                let alerts: Vec<Alert> = rows
-                    .iter()
-                    .map(|row| Alert {
-                        id: row.get("id"),
-                        user_id: row.get("user_id"),
-                        created_at: row.get::<_, f64>("created_at") as i64,
-                        area: row.get("area"),
-                        area_level2: row.get("area_level2"),
-                        area_level3: row.get("area_level3"),
-                        text1: row.get("text1"),
-                        text2: row.get("text2"),
-                        text3: row.get("text3"),
-                        audio1: row.get("audio1"),
-                        audio2: row.get("audio2"),
-                        audio3: row.get("audio3"),
-                        reached_users: row.get("reached_users"),
-                    })
-                    .collect();
+                let mut alerts: Vec<Alert> = vec![];
+                let mut current_alert_id = None;
+                let mut current_alert = None;
+
+                for row in rows {
+                    let alert_id: i32 = row.get("id");
+                    if current_alert_id != Some(alert_id) {
+                        if let Some(alert) = current_alert.take() {
+                            alerts.push(alert);
+                        }
+                        current_alert_id = Some(alert_id);
+                        current_alert = Some(Alert {
+                            id: row.get("id"),
+                            user_id: row.get("user_id"),
+                            created_at: row.get::<_, f64>("created_at") as i64,
+                            area: row.get("area"),
+                            area_level2: row.get("area_level2"),
+                            area_level3: row.get("area_level3"),
+                            text1: row.get("text1"),
+                            text2: row.get("text2"),
+                            text3: row.get("text3"),
+                            audio1: row.get("audio1"),
+                            audio2: row.get("audio2"),
+                            audio3: row.get("audio3"),
+                            reached_users: row.get("reached_users"),
+                            notifications: vec![],
+                        });
+                    }
+
+                    // Add the notification data to the notifications list
+                    if let Some(alert) = current_alert.as_mut() {
+                        let notification = Notification {
+                            id: row.get("notification_id"),
+                            alert: None,
+                            user_id: row.get("notification_user_id"),
+                            latitude: row.get("notification_latitude"),
+                            longitude: row.get("notification_longitude"),
+                            moving_activity: row.get("notification_activity"),
+                            level: row.get("notification_level"),
+                            seen: row.get("notification_seen"),
+                            created_at: row.get::<_, f64>("notification_created_at") as i64,
+                        };
+                        alert.notifications.push(notification);
+                    }
+                }
+
+                if let Some(alert) = current_alert {
+                    alerts.push(alert);
+                }
 
                 Ok(Some(alerts))
             }
@@ -224,6 +276,7 @@ pub mod mutations {
                         audio2: row.get("audio2"),
                         audio3: row.get("audio3"),
                         reached_users: row.get("reached_users"),
+                        notifications: vec![],
                     })
                     .collect::<Vec<Alert>>()
                     .first()
@@ -299,6 +352,7 @@ pub mod mutations {
                         audio2: row.get("audio2"),
                         audio3: row.get("audio3"),
                         reached_users: row.get("reached_users"),
+                        notifications: vec![],
                     })
                     .collect::<Vec<Alert>>()
                     .first()

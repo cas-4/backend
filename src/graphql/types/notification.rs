@@ -81,7 +81,7 @@ impl ToSql for LevelAlert {
 /// Notification struct
 pub struct Notification {
     pub id: i32,
-    pub alert: Alert,
+    pub alert: Option<Alert>,
     pub user_id: i32,
     pub latitude: f64,
     pub longitude: f64,
@@ -223,7 +223,7 @@ pub mod query {
                     .iter()
                     .map(|row| Notification {
                         id: row.get("id"),
-                        alert: Alert {
+                        alert: Some(Alert {
                             id: row.get("alert_id"),
                             user_id: row.get("alert_user_id"),
                             created_at: row.get::<_, f64>("alert_created_at") as i64,
@@ -237,7 +237,8 @@ pub mod query {
                             audio2: row.get("alert_audio2"),
                             audio3: row.get("alert_audio3"),
                             reached_users: row.get("alert_reached_users"),
-                        },
+                            notifications: vec![],
+                        }),
                         seen: row.get("seen"),
                         level: row.get("level"),
                         user_id: row.get("user_id"),
@@ -303,7 +304,7 @@ pub mod mutations {
                     .iter()
                     .map(|row| Notification {
                         id: row.get("id"),
-                        alert: Alert {
+                        alert: Some(Alert {
                             id: row.get("alert_id"),
                             user_id: row.get("alert_user_id"),
                             created_at: row.get::<_, f64>("alert_created_at") as i64,
@@ -317,7 +318,8 @@ pub mod mutations {
                             audio2: row.get("alert_audio2"),
                             audio3: row.get("alert_audio3"),
                             reached_users: row.get("alert_reached_users"),
-                        },
+                            notifications: vec![],
+                        }),
                         seen: row.get("seen"),
                         level: row.get("level"),
                         user_id: row.get("user_id"),

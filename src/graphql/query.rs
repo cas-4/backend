@@ -74,7 +74,7 @@ impl Query {
     /// curl http://localhost:8000/graphql
     /// -H 'authorization: Bearer ***'
     /// -H 'content-type: application/json'
-    /// -d '{"query":"{alerts(id: 12) {id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3}}"}'
+    /// -d '{"query":"{alerts(id: 12) {id, userId, createdAt, area, areaLevel2, areaLevel3, text1, text2, text3, notifications {userId, latitude, longitude }}"}'
     /// ```
     async fn alerts<'ctx>(
         &self,
