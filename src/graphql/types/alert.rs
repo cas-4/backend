@@ -173,18 +173,20 @@ pub mod query {
 
                     // Add the notification data to the notifications list
                     if let Some(alert) = current_alert.as_mut() {
-                        let notification = Notification {
-                            id: row.get("notification_id"),
-                            alert: None,
-                            user_id: row.get("notification_user_id"),
-                            latitude: row.get("notification_latitude"),
-                            longitude: row.get("notification_longitude"),
-                            moving_activity: row.get("notification_activity"),
-                            level: row.get("notification_level"),
-                            seen: row.get("notification_seen"),
-                            created_at: row.get::<_, f64>("notification_created_at") as i64,
-                        };
-                        alert.notifications.push(notification);
+                        if row.get::<_, Option<i32>>("notification_id").is_some() {
+                            let notification = Notification {
+                                id: row.get("notification_id"),
+                                alert: None,
+                                user_id: row.get("notification_user_id"),
+                                latitude: row.get("notification_latitude"),
+                                longitude: row.get("notification_longitude"),
+                                moving_activity: row.get("notification_activity"),
+                                level: row.get("notification_level"),
+                                seen: row.get("notification_seen"),
+                                created_at: row.get::<_, f64>("notification_created_at") as i64,
+                            };
+                            alert.notifications.push(notification);
+                        }
                     }
                 }
 
