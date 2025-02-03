@@ -69,7 +69,7 @@ impl Mutation {
     /// -H "Content-Type: application/json" \
     /// -H "Authorization: Bearer ***" \
     /// -d '{
-    ///   "query": "mutation UserPasswordEdit($input: UserPasswordEdit!) { userPasswordEdit(input: $input) { id email name address is_admin } }",
+    ///   "query": "mutation UserPasswordEdit($input: UserPasswordEdit!) { userPasswordEdit(input: $input) { id email name address isAdmin } }",
     ///   "variables": {
     ///     "input": {
     ///       "password1": "***",
@@ -95,7 +95,7 @@ impl Mutation {
     /// -H "Content-Type: application/json" \
     /// -H "Authorization: Bearer ***" \
     /// -d '{
-    ///   "query": "mutation UserEdit($input: UserEdit!, $id: Int!) { userEdit(input: $input, id: $id) { id email name address is_admin } }",
+    ///   "query": "mutation UserEdit($input: UserEdit!, $id: Int!) { userEdit(input: $input, id: $id) { id email name address isAdmin } }",
     ///   "variables": {
     ///     "input": {
     ///       "email": "mario.rossi@example.com",
