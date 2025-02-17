@@ -394,11 +394,7 @@ pub mod mutations {
                                     (SELECT area::geography FROM alerts WHERE id = $1),
                                     $2
                                 )
-                            AND id = (
-                                SELECT MAX(id)
-                                FROM positions
-                                WHERE user_id = p.user_id
-                            )",
+                            ",
                             &[&alert.id, &level.distance],
                         )
                         .await?
