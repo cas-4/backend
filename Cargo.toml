@@ -1,7 +1,7 @@
 [package]
 name = "cas"
 version = "0.10.1"
-edition = "2021"
+edition = "2024"
 authors = ["Santo Cariotti <santo@dcariotti.me>", "Luca Polese <luca.polese@studio.unibo.it>"]
 documentation = "https://cas-4.github.io/backend/cas/index.html"
 homepage = "https://github.com/cas-4/backend"
